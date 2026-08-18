@@ -1,0 +1,13 @@
+.idea/
+.vscode/
+*.log
+.env
+.env.*
+!.env.example
+
+# frontend (quando existir)
+frontend/node_modules/
+frontend/dist/
+
+# backend build outputs (o backend/.gitignore já cobre target/, mas garantindo)
+backend/target/
