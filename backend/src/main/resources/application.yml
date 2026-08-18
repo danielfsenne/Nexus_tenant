@@ -3,7 +3,7 @@ spring:
     name: nexus-backend
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/nexus
+    url: jdbc:postgresql://localhost:5433/nexus
     username: nexus
     password: nexus
     driver-class-name: org.postgresql.Driver
