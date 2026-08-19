@@ -19,6 +19,22 @@ export interface Order {
   createdAt: string
 }
 
+export interface AppUser {
+  id: number
+  name: string
+  email: string
+  role: 'ADMIN' | 'MANAGER' | 'EMPLOYEE'
+  createdAt: string
+}
+
+export interface Invite {
+  id: number
+  email: string
+  role: 'ADMIN' | 'MANAGER' | 'EMPLOYEE'
+  expiresAt: string
+  createdAt: string
+}
+
 export interface TenantUsage {
   companyName: string
   plan: 'FREE' | 'PRO' | 'ENTERPRISE'

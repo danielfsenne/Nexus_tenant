@@ -17,6 +17,12 @@ const router = createRouter({
       meta: { public: true },
     },
     {
+      path: '/aceitar-convite',
+      name: 'accept-invite',
+      component: () => import('../views/AcceptInviteView.vue'),
+      meta: { public: true },
+    },
+    {
       path: '/',
       component: () => import('../layouts/DefaultLayout.vue'),
       children: [
@@ -40,6 +46,12 @@ const router = createRouter({
           name: 'orders',
           component: () => import('../views/OrdersView.vue'),
         },
+        {
+          path: 'usuarios',
+          name: 'users',
+          component: () => import('../views/UsersView.vue'),
+          meta: { requiresAdmin: true },
+        },
       ],
     },
   ],
@@ -53,6 +65,10 @@ router.beforeEach((to) => {
   }
 
   if (to.meta.public && auth.isAuthenticated) {
+    return { name: 'dashboard' }
+  }
+
+  if (to.meta.requiresAdmin && auth.role !== 'ADMIN') {
     return { name: 'dashboard' }
   }
 

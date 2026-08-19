@@ -1,16 +1,18 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
 
-const links = [
+const links = computed(() => [
   { to: { name: 'dashboard' }, label: 'Dashboard' },
   { to: { name: 'customers' }, label: 'Clientes' },
   { to: { name: 'products' }, label: 'Produtos' },
   { to: { name: 'orders' }, label: 'Vendas' },
-]
+  ...(auth.role === 'ADMIN' ? [{ to: { name: 'users' }, label: 'Usuários' }] : []),
+])
 
 function handleLogout() {
   auth.logout()

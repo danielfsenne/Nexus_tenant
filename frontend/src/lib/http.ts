@@ -17,7 +17,7 @@ http.interceptors.request.use((config) => {
 http.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
+    if (error.response?.status === 401) {
       const auth = useAuthStore()
       auth.logout()
       router.push('/login')
