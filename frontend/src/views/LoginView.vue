@@ -63,6 +63,12 @@ async function handleSubmit() {
         </button>
       </form>
 
+      <p class="mt-3 text-center text-sm">
+        <RouterLink to="/esqueci-senha" class="font-medium text-slate-500 hover:underline">
+          Esqueci minha senha
+        </RouterLink>
+      </p>
+
       <p class="mt-4 text-center text-sm text-slate-500">
         Ainda não tem empresa cadastrada?
         <RouterLink to="/registro" class="font-medium text-slate-900 hover:underline">

@@ -23,6 +23,18 @@ const router = createRouter({
       meta: { public: true },
     },
     {
+      path: '/esqueci-senha',
+      name: 'forgot-password',
+      component: () => import('../views/ForgotPasswordView.vue'),
+      meta: { public: true },
+    },
+    {
+      path: '/redefinir-senha',
+      name: 'reset-password',
+      component: () => import('../views/ResetPasswordView.vue'),
+      meta: { public: true },
+    },
+    {
       path: '/',
       component: () => import('../layouts/DefaultLayout.vue'),
       children: [
