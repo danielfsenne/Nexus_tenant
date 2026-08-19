@@ -1,5 +1,6 @@
 package com.nexus.backend.customer;
 
+import com.nexus.backend.common.PlanLimitService;
 import com.nexus.backend.common.ResourceNotFoundException;
 import com.nexus.backend.domain.Customer;
 import com.nexus.backend.repository.CustomerRepository;
@@ -12,9 +13,11 @@ import java.util.List;
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
+    private final PlanLimitService planLimitService;
 
-    public CustomerService(CustomerRepository customerRepository) {
+    public CustomerService(CustomerRepository customerRepository, PlanLimitService planLimitService) {
         this.customerRepository = customerRepository;
+        this.planLimitService = planLimitService;
     }
 
     public List<CustomerResponse> findAll() {
@@ -28,10 +31,13 @@ public class CustomerService {
     }
 
     public CustomerResponse create(CustomerRequest request) {
+        Long tenantId = TenantContext.get();
+        planLimitService.assertCanCreateCustomer(tenantId, customerRepository.countByTenantId(tenantId));
+
         Customer customer = Customer.builder()
                 .name(request.name())
                 .email(request.email())
-                .tenantId(TenantContext.get())
+                .tenantId(tenantId)
                 .build();
 
         return CustomerResponse.from(customerRepository.save(customer));
