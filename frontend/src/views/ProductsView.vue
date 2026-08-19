@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import http from '../lib/http'
+import http, { extractErrorMessage } from '../lib/http'
 import type { Product } from '../types'
 
 const products = ref<Product[]>([])
@@ -10,6 +10,7 @@ const name = ref('')
 const price = ref<number | null>(null)
 const editingId = ref<number | null>(null)
 const saving = ref(false)
+const errorMessage = ref('')
 
 async function loadProducts() {
   loading.value = true
@@ -20,6 +21,7 @@ async function loadProducts() {
 
 async function handleSubmit() {
   saving.value = true
+  errorMessage.value = ''
   try {
     const payload = { name: name.value, price: price.value }
     if (editingId.value) {
@@ -29,6 +31,8 @@ async function handleSubmit() {
     }
     resetForm()
     await loadProducts()
+  } catch (error) {
+    errorMessage.value = extractErrorMessage(error, 'Não foi possível salvar o produto.')
   } finally {
     saving.value = false
   }
@@ -103,6 +107,8 @@ onMounted(loadProducts)
       >
         Cancelar
       </button>
+
+      <p v-if="errorMessage" class="w-full text-sm text-red-600">{{ errorMessage }}</p>
     </form>
 
     <div v-if="loading" class="text-sm text-slate-500">Carregando...</div>

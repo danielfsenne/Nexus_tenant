@@ -18,3 +18,10 @@ export interface Order {
   total: number
   createdAt: string
 }
+
+export interface TenantUsage {
+  companyName: string
+  plan: 'FREE' | 'PRO' | 'ENTERPRISE'
+  usage: { users: number; customers: number; products: number }
+  limits: { maxUsers: number | null; maxCustomers: number | null; maxProducts: number | null }
+}
