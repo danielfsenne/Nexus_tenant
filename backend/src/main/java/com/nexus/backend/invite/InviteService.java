@@ -1,9 +1,11 @@
 package com.nexus.backend.invite;
 
+import com.nexus.backend.audit.AuditService;
 import com.nexus.backend.auth.AuthResponse;
 import com.nexus.backend.common.ConflictException;
 import com.nexus.backend.common.PlanLimitService;
 import com.nexus.backend.common.ResourceNotFoundException;
+import com.nexus.backend.domain.AuditAction;
 import com.nexus.backend.domain.Invite;
 import com.nexus.backend.domain.User;
 import com.nexus.backend.repository.InviteRepository;
@@ -25,12 +27,14 @@ import java.util.UUID;
 public class InviteService {
 
     private static final Logger log = LoggerFactory.getLogger(InviteService.class);
+    private static final String ENTITY_TYPE = "USER";
 
     private final InviteRepository inviteRepository;
     private final UserRepository userRepository;
     private final PlanLimitService planLimitService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final AuditService auditService;
     private final String frontendUrl;
     private final long inviteExpirationDays;
 
@@ -40,6 +44,7 @@ public class InviteService {
             PlanLimitService planLimitService,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
+            AuditService auditService,
             @Value("${nexus.frontend-url}") String frontendUrl,
             @Value("${nexus.invite-expiration-days}") long inviteExpirationDays
     ) {
@@ -48,6 +53,7 @@ public class InviteService {
         this.planLimitService = planLimitService;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.auditService = auditService;
         this.frontendUrl = frontendUrl;
         this.inviteExpirationDays = inviteExpirationDays;
     }
@@ -76,6 +82,8 @@ public class InviteService {
 
         String acceptLink = frontendUrl + "/aceitar-convite?token=" + invite.getToken();
         log.info("Convite criado para {} (papel {}). Link de aceite: {}", invite.getEmail(), invite.getRole(), acceptLink);
+
+        auditService.record(AuditAction.INVITED, ENTITY_TYPE, null, invite.getEmail() + " (" + invite.getRole() + ")");
 
         return InviteResponse.from(invite);
     }
@@ -112,6 +120,11 @@ public class InviteService {
 
         invite.setAcceptedAt(Instant.now());
         inviteRepository.save(invite);
+
+        auditService.recordForTenant(
+                user.getTenantId(), user.getId(), user.getEmail(),
+                AuditAction.INVITE_ACCEPTED, ENTITY_TYPE, user.getId(), user.getEmail() + " (" + user.getRole() + ")"
+        );
 
         String token = jwtService.generateToken(user);
         return new AuthResponse(token, user.getTenantId(), user.getRole().name());

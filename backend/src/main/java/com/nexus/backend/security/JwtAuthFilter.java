@@ -40,8 +40,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 Long tenantId = claims.get("tenantId", Long.class);
                 String role = claims.get("role", String.class);
                 String email = claims.getSubject();
+                Long userId = claims.get("userId", Long.class);
 
                 TenantContext.set(tenantId);
+                CurrentUserContext.set(userId, email);
 
                 var authentication = new UsernamePasswordAuthenticationToken(
                         email,
@@ -52,6 +54,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             } catch (JwtException | IllegalArgumentException e) {
                 SecurityContextHolder.clearContext();
                 TenantContext.clear();
+                CurrentUserContext.clear();
             }
         }
 
@@ -59,6 +62,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } finally {
             TenantContext.clear();
+            CurrentUserContext.clear();
         }
     }
 }
