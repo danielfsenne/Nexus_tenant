@@ -7,6 +7,8 @@ import com.nexus.backend.domain.AuditAction;
 import com.nexus.backend.domain.Product;
 import com.nexus.backend.repository.ProductRepository;
 import com.nexus.backend.security.TenantContext;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,6 +17,8 @@ import java.util.List;
 public class ProductService {
 
     private static final String ENTITY_TYPE = "PRODUCT";
+    private static final String CACHE_NAME = "products";
+    private static final String CACHE_KEY = "T(com.nexus.backend.security.TenantContext).get()";
 
     private final ProductRepository productRepository;
     private final PlanLimitService planLimitService;
@@ -26,6 +30,7 @@ public class ProductService {
         this.auditService = auditService;
     }
 
+    @Cacheable(value = CACHE_NAME, key = CACHE_KEY)
     public List<ProductResponse> findAll() {
         return productRepository.findAllByTenantId(TenantContext.get()).stream()
                 .map(ProductResponse::from)
@@ -36,6 +41,7 @@ public class ProductService {
         return ProductResponse.from(findOwnedByTenant(id));
     }
 
+    @CacheEvict(value = CACHE_NAME, key = CACHE_KEY)
     public ProductResponse create(ProductRequest request) {
         Long tenantId = TenantContext.get();
         planLimitService.assertCanCreateProduct(tenantId, productRepository.countByTenantId(tenantId));
@@ -51,6 +57,7 @@ public class ProductService {
         return ProductResponse.from(saved);
     }
 
+    @CacheEvict(value = CACHE_NAME, key = CACHE_KEY)
     public ProductResponse update(Long id, ProductRequest request) {
         Product product = findOwnedByTenant(id);
         product.setName(request.name());
@@ -60,6 +67,7 @@ public class ProductService {
         return ProductResponse.from(saved);
     }
 
+    @CacheEvict(value = CACHE_NAME, key = CACHE_KEY)
     public void delete(Long id) {
         Product product = findOwnedByTenant(id);
         productRepository.delete(product);

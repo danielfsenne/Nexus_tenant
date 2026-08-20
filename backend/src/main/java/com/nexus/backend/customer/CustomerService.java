@@ -7,6 +7,8 @@ import com.nexus.backend.domain.AuditAction;
 import com.nexus.backend.domain.Customer;
 import com.nexus.backend.repository.CustomerRepository;
 import com.nexus.backend.security.TenantContext;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,6 +17,8 @@ import java.util.List;
 public class CustomerService {
 
     private static final String ENTITY_TYPE = "CUSTOMER";
+    private static final String CACHE_NAME = "customers";
+    private static final String CACHE_KEY = "T(com.nexus.backend.security.TenantContext).get()";
 
     private final CustomerRepository customerRepository;
     private final PlanLimitService planLimitService;
@@ -26,6 +30,7 @@ public class CustomerService {
         this.auditService = auditService;
     }
 
+    @Cacheable(value = CACHE_NAME, key = CACHE_KEY)
     public List<CustomerResponse> findAll() {
         return customerRepository.findAllByTenantId(TenantContext.get()).stream()
                 .map(CustomerResponse::from)
@@ -36,6 +41,7 @@ public class CustomerService {
         return CustomerResponse.from(findOwnedByTenant(id));
     }
 
+    @CacheEvict(value = CACHE_NAME, key = CACHE_KEY)
     public CustomerResponse create(CustomerRequest request) {
         Long tenantId = TenantContext.get();
         planLimitService.assertCanCreateCustomer(tenantId, customerRepository.countByTenantId(tenantId));
@@ -51,6 +57,7 @@ public class CustomerService {
         return CustomerResponse.from(saved);
     }
 
+    @CacheEvict(value = CACHE_NAME, key = CACHE_KEY)
     public CustomerResponse update(Long id, CustomerRequest request) {
         Customer customer = findOwnedByTenant(id);
         customer.setName(request.name());
@@ -60,6 +67,7 @@ public class CustomerService {
         return CustomerResponse.from(saved);
     }
 
+    @CacheEvict(value = CACHE_NAME, key = CACHE_KEY)
     public void delete(Long id) {
         Customer customer = findOwnedByTenant(id);
         customerRepository.delete(customer);
