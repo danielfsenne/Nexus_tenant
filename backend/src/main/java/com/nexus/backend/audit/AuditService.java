@@ -5,7 +5,10 @@ import com.nexus.backend.domain.AuditLog;
 import com.nexus.backend.repository.AuditLogRepository;
 import com.nexus.backend.security.CurrentUserContext;
 import com.nexus.backend.security.TenantContext;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class AuditService {
@@ -14,6 +17,12 @@ public class AuditService {
 
     public AuditService(AuditLogRepository auditLogRepository) {
         this.auditLogRepository = auditLogRepository;
+    }
+
+    public List<AuditLogResponse> findRecent(int limit) {
+        return auditLogRepository.findAllByTenantIdOrderByCreatedAtDesc(TenantContext.get(), PageRequest.of(0, limit)).stream()
+                .map(AuditLogResponse::from)
+                .toList();
     }
 
     /**
