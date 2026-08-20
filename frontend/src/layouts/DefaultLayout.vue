@@ -11,7 +11,12 @@ const links = computed(() => [
   { to: { name: 'customers' }, label: 'Clientes' },
   { to: { name: 'products' }, label: 'Produtos' },
   { to: { name: 'orders' }, label: 'Vendas' },
-  ...(auth.role === 'ADMIN' ? [{ to: { name: 'users' }, label: 'Usuários' }] : []),
+  ...(auth.role === 'ADMIN'
+    ? [
+        { to: { name: 'users' }, label: 'Usuários' },
+        { to: { name: 'audit-log' }, label: 'Auditoria' },
+      ]
+    : []),
 ])
 
 function handleLogout() {

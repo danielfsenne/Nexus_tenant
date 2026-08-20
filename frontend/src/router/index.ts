@@ -64,6 +64,12 @@ const router = createRouter({
           component: () => import('../views/UsersView.vue'),
           meta: { requiresAdmin: true },
         },
+        {
+          path: 'auditoria',
+          name: 'audit-log',
+          component: () => import('../views/AuditLogView.vue'),
+          meta: { requiresAdmin: true },
+        },
       ],
     },
   ],

@@ -35,6 +35,16 @@ export interface Invite {
   createdAt: string
 }
 
+export interface AuditLog {
+  id: number
+  userEmail: string | null
+  action: 'CREATED' | 'UPDATED' | 'DELETED' | 'INVITED' | 'INVITE_ACCEPTED'
+  entityType: string
+  entityId: number | null
+  details: string | null
+  createdAt: string
+}
+
 export interface TenantUsage {
   companyName: string
   plan: 'FREE' | 'PRO' | 'ENTERPRISE'
