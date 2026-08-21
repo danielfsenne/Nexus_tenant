@@ -5,5 +5,7 @@ public enum AuditAction {
     UPDATED,
     DELETED,
     INVITED,
-    INVITE_ACCEPTED
+    INVITE_ACCEPTED,
+    PROCESSED,
+    PROCESSING_FAILED
 }

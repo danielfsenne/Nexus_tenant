@@ -38,7 +38,7 @@ export interface Invite {
 export interface AuditLog {
   id: number
   userEmail: string | null
-  action: 'CREATED' | 'UPDATED' | 'DELETED' | 'INVITED' | 'INVITE_ACCEPTED'
+  action: 'CREATED' | 'UPDATED' | 'DELETED' | 'INVITED' | 'INVITE_ACCEPTED' | 'PROCESSED' | 'PROCESSING_FAILED'
   entityType: string
   entityId: number | null
   details: string | null

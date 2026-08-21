@@ -12,6 +12,8 @@ const actionLabels: Record<AuditLog['action'], string> = {
   DELETED: 'Excluiu',
   INVITED: 'Convidou',
   INVITE_ACCEPTED: 'Convite aceito',
+  PROCESSED: 'Processou',
+  PROCESSING_FAILED: 'Falhou ao processar',
 }
 
 const entityLabels: Record<string, string> = {
