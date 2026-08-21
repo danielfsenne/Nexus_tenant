@@ -7,6 +7,7 @@ import com.nexus.backend.domain.Order;
 import com.nexus.backend.repository.CustomerRepository;
 import com.nexus.backend.repository.OrderRepository;
 import com.nexus.backend.security.TenantContext;
+import com.nexus.backend.websocket.NotificationService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,11 +20,18 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final CustomerRepository customerRepository;
     private final AuditService auditService;
+    private final NotificationService notificationService;
 
-    public OrderService(OrderRepository orderRepository, CustomerRepository customerRepository, AuditService auditService) {
+    public OrderService(
+            OrderRepository orderRepository,
+            CustomerRepository customerRepository,
+            AuditService auditService,
+            NotificationService notificationService
+    ) {
         this.orderRepository = orderRepository;
         this.customerRepository = customerRepository;
         this.auditService = auditService;
+        this.notificationService = notificationService;
     }
 
     public List<OrderResponse> findAll() {
@@ -50,6 +58,7 @@ public class OrderService {
 
         Order saved = orderRepository.save(order);
         auditService.record(AuditAction.CREATED, ENTITY_TYPE, saved.getId(), "total " + saved.getTotal());
+        notificationService.notifyTenant(tenantId, "ORDER_CREATED", "Nova venda registrada: R$ " + saved.getTotal());
         return OrderResponse.from(saved);
     }
 

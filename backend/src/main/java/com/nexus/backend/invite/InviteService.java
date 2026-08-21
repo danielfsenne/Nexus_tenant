@@ -12,6 +12,7 @@ import com.nexus.backend.repository.InviteRepository;
 import com.nexus.backend.repository.UserRepository;
 import com.nexus.backend.security.JwtService;
 import com.nexus.backend.security.TenantContext;
+import com.nexus.backend.websocket.NotificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,6 +36,7 @@ public class InviteService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuditService auditService;
+    private final NotificationService notificationService;
     private final String frontendUrl;
     private final long inviteExpirationDays;
 
@@ -45,6 +47,7 @@ public class InviteService {
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             AuditService auditService,
+            NotificationService notificationService,
             @Value("${nexus.frontend-url}") String frontendUrl,
             @Value("${nexus.invite-expiration-days}") long inviteExpirationDays
     ) {
@@ -54,6 +57,7 @@ public class InviteService {
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.auditService = auditService;
+        this.notificationService = notificationService;
         this.frontendUrl = frontendUrl;
         this.inviteExpirationDays = inviteExpirationDays;
     }
@@ -124,6 +128,11 @@ public class InviteService {
         auditService.recordForTenant(
                 user.getTenantId(), user.getId(), user.getEmail(),
                 AuditAction.INVITE_ACCEPTED, ENTITY_TYPE, user.getId(), user.getEmail() + " (" + user.getRole() + ")"
+        );
+
+        notificationService.notifyTenant(
+                user.getTenantId(), "INVITE_ACCEPTED",
+                user.getName() + " aceitou o convite e entrou como " + user.getRole()
         );
 
         String token = jwtService.generateToken(user);
