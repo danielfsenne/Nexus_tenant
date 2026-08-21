@@ -38,6 +38,18 @@ spring:
       simple:
         auto-startup: ${NEXUS_RABBITMQ_LISTENER_ENABLED:true}
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${NEXUS_MAIL_USERNAME:danielflausinosenne123@gmail.com}
+    password: ${NEXUS_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 server:
   port: 8080
 
@@ -57,3 +69,6 @@ nexus:
     base-delay-ms: 3000
   maintenance:
     cron: "0 0 3 * * *"
+  mail:
+    enabled: ${NEXUS_MAIL_ENABLED:true}
+    from: ${NEXUS_MAIL_USERNAME:danielflausinosenne123@gmail.com}

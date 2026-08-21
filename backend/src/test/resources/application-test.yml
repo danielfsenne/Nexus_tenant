@@ -33,3 +33,6 @@ nexus:
     base-delay-ms: 3000
   maintenance:
     cron: "0 0 3 * * *"
+  mail:
+    enabled: false
+    from: teste@nexus.local
