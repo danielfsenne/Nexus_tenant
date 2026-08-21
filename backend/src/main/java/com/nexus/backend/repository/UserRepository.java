@@ -8,7 +8,11 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    Optional<User> findByEmail(String email);
+    /**
+     * O e-mail é único por tenant, não globalmente — a mesma pessoa pode ser
+     * admin em várias empresas. Pega a conta mais antiga com esse e-mail.
+     */
+    Optional<User> findFirstByEmailOrderByIdAsc(String email);
 
     Optional<User> findByIdAndTenantId(Long id, Long tenantId);
 

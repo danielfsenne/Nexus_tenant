@@ -82,7 +82,7 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.email())
+        User user = userRepository.findFirstByEmailOrderByIdAsc(request.email())
                 .orElseThrow(() -> new BadCredentialsException("Credenciais inválidas"));
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
@@ -94,7 +94,7 @@ public class AuthService {
     }
 
     public void forgotPassword(ForgotPasswordRequest request) {
-        Optional<User> user = userRepository.findByEmail(request.email());
+        Optional<User> user = userRepository.findFirstByEmailOrderByIdAsc(request.email());
 
         if (user.isEmpty()) {
             // Não revela se o e-mail existe ou não.
