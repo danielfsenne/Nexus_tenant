@@ -2,6 +2,10 @@
 import { onMounted, ref } from 'vue'
 import http from '../lib/http'
 import type { AuditLog } from '../types'
+import PageHeader from '../components/ui/PageHeader.vue'
+import BaseCard from '../components/ui/BaseCard.vue'
+import EmptyState from '../components/ui/EmptyState.vue'
+import Spinner from '../components/ui/Spinner.vue'
 
 const logs = ref<AuditLog[]>([])
 const loading = ref(true)
@@ -36,32 +40,35 @@ onMounted(async () => {
 
 <template>
   <div>
-    <h1 class="mb-6 text-xl font-semibold text-slate-900">Auditoria</h1>
+    <PageHeader title="Auditoria" />
 
-    <div v-if="loading" class="text-sm text-slate-500">Carregando...</div>
+    <Spinner v-if="loading" />
 
-    <table v-else class="w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-sm">
-      <thead class="bg-slate-50 text-left text-slate-500">
-        <tr>
-          <th class="px-4 py-2">Quando</th>
-          <th class="px-4 py-2">Usuário</th>
-          <th class="px-4 py-2">Ação</th>
-          <th class="px-4 py-2">Detalhes</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="log in logs" :key="log.id" class="border-t border-slate-100">
-          <td class="px-4 py-2 whitespace-nowrap text-slate-500">{{ formatDateTime(log.createdAt) }}</td>
-          <td class="px-4 py-2">{{ log.userEmail ?? '—' }}</td>
-          <td class="px-4 py-2">
-            {{ actionLabels[log.action] }} {{ entityLabels[log.entityType] ?? log.entityType.toLowerCase() }}
-          </td>
-          <td class="px-4 py-2 text-slate-500">{{ log.details ?? '—' }}</td>
-        </tr>
-        <tr v-if="logs.length === 0">
-          <td colspan="4" class="px-4 py-6 text-center text-slate-400">Nenhum evento registrado ainda.</td>
-        </tr>
-      </tbody>
-    </table>
+    <BaseCard v-else class="overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-left text-slate-500 dark:bg-slate-900/40 dark:text-slate-400">
+          <tr>
+            <th class="px-4 py-2">Quando</th>
+            <th class="px-4 py-2">Usuário</th>
+            <th class="px-4 py-2">Ação</th>
+            <th class="px-4 py-2">Detalhes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="log in logs" :key="log.id" class="border-t border-slate-100 dark:border-slate-700">
+            <td class="whitespace-nowrap px-4 py-2 text-slate-500 dark:text-slate-400">
+              {{ formatDateTime(log.createdAt) }}
+            </td>
+            <td class="px-4 py-2 text-slate-900 dark:text-slate-100">{{ log.userEmail ?? '—' }}</td>
+            <td class="px-4 py-2 text-slate-700 dark:text-slate-300">
+              {{ actionLabels[log.action] }} {{ entityLabels[log.entityType] ?? log.entityType.toLowerCase() }}
+            </td>
+            <td class="px-4 py-2 text-slate-500 dark:text-slate-400">{{ log.details ?? '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <EmptyState v-if="logs.length === 0" message="Nenhum evento registrado ainda." />
+    </BaseCard>
   </div>
 </template>

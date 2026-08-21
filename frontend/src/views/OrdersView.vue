@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
-import http from '../lib/http'
+import http, { extractErrorMessage } from '../lib/http'
 import type { Order, Customer } from '../types'
+import PageHeader from '../components/ui/PageHeader.vue'
+import BaseCard from '../components/ui/BaseCard.vue'
+import BaseInput from '../components/ui/BaseInput.vue'
+import BaseSelect from '../components/ui/BaseSelect.vue'
+import BaseButton from '../components/ui/BaseButton.vue'
+import Alert from '../components/ui/Alert.vue'
+import EmptyState from '../components/ui/EmptyState.vue'
+import Spinner from '../components/ui/Spinner.vue'
 
 const orders = ref<Order[]>([])
 const customers = ref<Customer[]>([])
@@ -10,6 +18,7 @@ const loading = ref(true)
 const customerId = ref<number | null>(null)
 const total = ref<number | null>(null)
 const saving = ref(false)
+const errorMessage = ref('')
 
 const customerNameById = computed(() => {
   const map = new Map<number, string>()
@@ -30,11 +39,14 @@ async function loadData() {
 
 async function handleSubmit() {
   saving.value = true
+  errorMessage.value = ''
   try {
-    await http.post('/orders', { customerId: customerId.value, total: total.value })
+    await http.post('/orders', { customerId: Number(customerId.value), total: total.value })
     customerId.value = null
     total.value = null
     await loadData()
+  } catch (error) {
+    errorMessage.value = extractErrorMessage(error, 'Não foi possível registrar a venda.')
   } finally {
     saving.value = false
   }
@@ -49,65 +61,50 @@ onMounted(loadData)
 
 <template>
   <div>
-    <h1 class="mb-6 text-xl font-semibold text-slate-900">Vendas</h1>
+    <PageHeader title="Vendas" />
 
-    <form
-      class="mb-6 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4"
-      @submit.prevent="handleSubmit"
-    >
-      <div>
-        <label class="mb-1 block text-sm font-medium text-slate-700">Cliente</label>
-        <select
-          v-model="customerId"
-          required
-          class="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-        >
-          <option :value="null" disabled>Selecione</option>
-          <option v-for="customer in customers" :key="customer.id" :value="customer.id">
-            {{ customer.name }}
-          </option>
-        </select>
-      </div>
+    <BaseCard class="mb-6 p-4">
+      <form class="flex flex-wrap items-end gap-3" @submit.prevent="handleSubmit">
+        <div class="min-w-48">
+          <BaseSelect v-model="customerId" label="Cliente" required>
+            <option :value="null" disabled>Selecione</option>
+            <option v-for="customer in customers" :key="customer.id" :value="customer.id">
+              {{ customer.name }}
+            </option>
+          </BaseSelect>
+        </div>
 
-      <div>
-        <label class="mb-1 block text-sm font-medium text-slate-700">Total</label>
-        <input
-          v-model.number="total"
-          type="number"
-          step="0.01"
-          min="0"
-          required
-          class="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-        />
-      </div>
+        <div class="w-32">
+          <BaseInput v-model.number="total" label="Total" type="number" step="0.01" min="0" required />
+        </div>
 
-      <button
-        type="submit"
-        :disabled="saving"
-        class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-      >
-        Registrar venda
-      </button>
-    </form>
+        <BaseButton type="submit" :loading="saving">Registrar venda</BaseButton>
 
-    <div v-if="loading" class="text-sm text-slate-500">Carregando...</div>
+        <Alert v-if="errorMessage" variant="error" class="w-full">{{ errorMessage }}</Alert>
+      </form>
+    </BaseCard>
 
-    <table v-else class="w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-sm">
-      <thead class="bg-slate-50 text-left text-slate-500">
-        <tr>
-          <th class="px-4 py-2">Cliente</th>
-          <th class="px-4 py-2">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="order in orders" :key="order.id" class="border-t border-slate-100">
-          <td class="px-4 py-2">{{ customerNameById.get(order.customerId) ?? `#${order.customerId}` }}</td>
-          <td class="px-4 py-2">{{ formatCurrency(order.total) }}</td>
-        </tr>
-        <tr v-if="orders.length === 0">
-          <td colspan="2" class="px-4 py-6 text-center text-slate-400">Nenhuma venda registrada.</td>
-        </tr>
-      </tbody>
-    </table>
+    <Spinner v-if="loading" />
+
+    <BaseCard v-else class="overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-left text-slate-500 dark:bg-slate-900/40 dark:text-slate-400">
+          <tr>
+            <th class="px-4 py-2">Cliente</th>
+            <th class="px-4 py-2">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="order in orders" :key="order.id" class="border-t border-slate-100 dark:border-slate-700">
+            <td class="px-4 py-2 text-slate-900 dark:text-slate-100">
+              {{ customerNameById.get(order.customerId) ?? `#${order.customerId}` }}
+            </td>
+            <td class="px-4 py-2 text-slate-600 dark:text-slate-400">{{ formatCurrency(order.total) }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <EmptyState v-if="orders.length === 0" message="Nenhuma venda registrada." />
+    </BaseCard>
   </div>
 </template>

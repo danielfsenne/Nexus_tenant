@@ -2,6 +2,13 @@
 import { onMounted, ref } from 'vue'
 import http, { extractErrorMessage } from '../lib/http'
 import type { Customer } from '../types'
+import PageHeader from '../components/ui/PageHeader.vue'
+import BaseCard from '../components/ui/BaseCard.vue'
+import BaseInput from '../components/ui/BaseInput.vue'
+import BaseButton from '../components/ui/BaseButton.vue'
+import Alert from '../components/ui/Alert.vue'
+import EmptyState from '../components/ui/EmptyState.vue'
+import Spinner from '../components/ui/Spinner.vue'
 
 const customers = ref<Customer[]>([])
 const loading = ref(true)
@@ -59,73 +66,61 @@ onMounted(loadCustomers)
 
 <template>
   <div>
-    <h1 class="mb-6 text-xl font-semibold text-slate-900">Clientes</h1>
+    <PageHeader title="Clientes" />
 
-    <form
-      class="mb-6 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4"
-      @submit.prevent="handleSubmit"
-    >
-      <div>
-        <label class="mb-1 block text-sm font-medium text-slate-700">Nome</label>
-        <input
-          v-model="name"
-          required
-          class="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-        />
-      </div>
+    <BaseCard class="mb-6 p-4">
+      <form class="flex flex-wrap items-end gap-3" @submit.prevent="handleSubmit">
+        <div class="min-w-48">
+          <BaseInput v-model="name" label="Nome" required />
+        </div>
+        <div class="min-w-48">
+          <BaseInput v-model="email" label="E-mail" type="email" />
+        </div>
 
-      <div>
-        <label class="mb-1 block text-sm font-medium text-slate-700">E-mail</label>
-        <input
-          v-model="email"
-          type="email"
-          class="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-        />
-      </div>
+        <BaseButton type="submit" :loading="saving">
+          {{ editingId ? 'Salvar' : 'Adicionar' }}
+        </BaseButton>
 
-      <button
-        type="submit"
-        :disabled="saving"
-        class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-      >
-        {{ editingId ? 'Salvar' : 'Adicionar' }}
-      </button>
+        <BaseButton v-if="editingId" type="button" variant="secondary" @click="resetForm">
+          Cancelar
+        </BaseButton>
 
-      <button
-        v-if="editingId"
-        type="button"
-        class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-        @click="resetForm"
-      >
-        Cancelar
-      </button>
+        <Alert v-if="errorMessage" variant="error" class="w-full">{{ errorMessage }}</Alert>
+      </form>
+    </BaseCard>
 
-      <p v-if="errorMessage" class="w-full text-sm text-red-600">{{ errorMessage }}</p>
-    </form>
+    <Spinner v-if="loading" />
 
-    <div v-if="loading" class="text-sm text-slate-500">Carregando...</div>
+    <BaseCard v-else class="overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-left text-slate-500 dark:bg-slate-900/40 dark:text-slate-400">
+          <tr>
+            <th class="px-4 py-2">Nome</th>
+            <th class="px-4 py-2">E-mail</th>
+            <th class="px-4 py-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="customer in customers"
+            :key="customer.id"
+            class="border-t border-slate-100 dark:border-slate-700"
+          >
+            <td class="px-4 py-2 text-slate-900 dark:text-slate-100">{{ customer.name }}</td>
+            <td class="px-4 py-2 text-slate-600 dark:text-slate-400">{{ customer.email }}</td>
+            <td class="px-4 py-2 text-right">
+              <button class="text-slate-600 hover:underline dark:text-slate-400" @click="editCustomer(customer)">
+                Editar
+              </button>
+              <button class="ml-3 text-red-600 hover:underline dark:text-red-400" @click="deleteCustomer(customer.id)">
+                Excluir
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
-    <table v-else class="w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-sm">
-      <thead class="bg-slate-50 text-left text-slate-500">
-        <tr>
-          <th class="px-4 py-2">Nome</th>
-          <th class="px-4 py-2">E-mail</th>
-          <th class="px-4 py-2"></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="customer in customers" :key="customer.id" class="border-t border-slate-100">
-          <td class="px-4 py-2">{{ customer.name }}</td>
-          <td class="px-4 py-2">{{ customer.email }}</td>
-          <td class="px-4 py-2 text-right">
-            <button class="text-slate-600 hover:underline" @click="editCustomer(customer)">Editar</button>
-            <button class="ml-3 text-red-600 hover:underline" @click="deleteCustomer(customer.id)">Excluir</button>
-          </td>
-        </tr>
-        <tr v-if="customers.length === 0">
-          <td colspan="3" class="px-4 py-6 text-center text-slate-400">Nenhum cliente cadastrado.</td>
-        </tr>
-      </tbody>
-    </table>
+      <EmptyState v-if="customers.length === 0" message="Nenhum cliente cadastrado." />
+    </BaseCard>
   </div>
 </template>

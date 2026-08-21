@@ -2,6 +2,14 @@
 import { onMounted, ref } from 'vue'
 import http, { extractErrorMessage } from '../lib/http'
 import type { AppUser, Invite } from '../types'
+import PageHeader from '../components/ui/PageHeader.vue'
+import BaseCard from '../components/ui/BaseCard.vue'
+import BaseInput from '../components/ui/BaseInput.vue'
+import BaseSelect from '../components/ui/BaseSelect.vue'
+import BaseButton from '../components/ui/BaseButton.vue'
+import Alert from '../components/ui/Alert.vue'
+import EmptyState from '../components/ui/EmptyState.vue'
+import Spinner from '../components/ui/Spinner.vue'
 
 const users = ref<AppUser[]>([])
 const invites = ref<Invite[]>([])
@@ -49,86 +57,72 @@ onMounted(loadData)
 
 <template>
   <div>
-    <h1 class="mb-6 text-xl font-semibold text-slate-900">Usuários</h1>
+    <PageHeader title="Usuários" />
 
-    <form
-      class="mb-6 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4"
-      @submit.prevent="handleInvite"
-    >
-      <div>
-        <label class="mb-1 block text-sm font-medium text-slate-700">E-mail</label>
-        <input
-          v-model="email"
-          type="email"
-          required
-          class="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-        />
-      </div>
+    <BaseCard class="mb-6 p-4">
+      <form class="flex flex-wrap items-end gap-3" @submit.prevent="handleInvite">
+        <div class="min-w-48">
+          <BaseInput v-model="email" label="E-mail" type="email" required />
+        </div>
 
-      <div>
-        <label class="mb-1 block text-sm font-medium text-slate-700">Papel</label>
-        <select
-          v-model="role"
-          class="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-        >
-          <option value="MANAGER">Manager</option>
-          <option value="EMPLOYEE">Employee</option>
-        </select>
-      </div>
+        <div class="w-40">
+          <BaseSelect v-model="role" label="Papel">
+            <option value="MANAGER">Manager</option>
+            <option value="EMPLOYEE">Employee</option>
+          </BaseSelect>
+        </div>
 
-      <button
-        type="submit"
-        :disabled="saving"
-        class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-      >
-        Convidar
-      </button>
+        <BaseButton type="submit" :loading="saving">Convidar</BaseButton>
 
-      <p v-if="errorMessage" class="w-full text-sm text-red-600">{{ errorMessage }}</p>
-      <p v-if="successMessage" class="w-full text-sm text-emerald-600">{{ successMessage }}</p>
-    </form>
+        <Alert v-if="errorMessage" variant="error" class="w-full">{{ errorMessage }}</Alert>
+        <Alert v-if="successMessage" variant="success" class="w-full">{{ successMessage }}</Alert>
+      </form>
+    </BaseCard>
 
-    <div v-if="loading" class="text-sm text-slate-500">Carregando...</div>
+    <Spinner v-if="loading" />
 
     <template v-else>
-      <h2 class="mb-2 text-sm font-semibold text-slate-900">Ativos</h2>
-      <table class="mb-6 w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-sm">
-        <thead class="bg-slate-50 text-left text-slate-500">
-          <tr>
-            <th class="px-4 py-2">Nome</th>
-            <th class="px-4 py-2">E-mail</th>
-            <th class="px-4 py-2">Papel</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="user in users" :key="user.id" class="border-t border-slate-100">
-            <td class="px-4 py-2">{{ user.name }}</td>
-            <td class="px-4 py-2">{{ user.email }}</td>
-            <td class="px-4 py-2">{{ user.role }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <h2 class="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-50">Ativos</h2>
+      <BaseCard class="mb-6 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-left text-slate-500 dark:bg-slate-900/40 dark:text-slate-400">
+            <tr>
+              <th class="px-4 py-2">Nome</th>
+              <th class="px-4 py-2">E-mail</th>
+              <th class="px-4 py-2">Papel</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="user in users" :key="user.id" class="border-t border-slate-100 dark:border-slate-700">
+              <td class="px-4 py-2 text-slate-900 dark:text-slate-100">{{ user.name }}</td>
+              <td class="px-4 py-2 text-slate-600 dark:text-slate-400">{{ user.email }}</td>
+              <td class="px-4 py-2 text-slate-600 dark:text-slate-400">{{ user.role }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </BaseCard>
 
-      <h2 class="mb-2 text-sm font-semibold text-slate-900">Convites pendentes</h2>
-      <table class="w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-sm">
-        <thead class="bg-slate-50 text-left text-slate-500">
-          <tr>
-            <th class="px-4 py-2">E-mail</th>
-            <th class="px-4 py-2">Papel</th>
-            <th class="px-4 py-2">Expira em</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="invite in invites" :key="invite.id" class="border-t border-slate-100">
-            <td class="px-4 py-2">{{ invite.email }}</td>
-            <td class="px-4 py-2">{{ invite.role }}</td>
-            <td class="px-4 py-2">{{ formatDate(invite.expiresAt) }}</td>
-          </tr>
-          <tr v-if="invites.length === 0">
-            <td colspan="3" class="px-4 py-6 text-center text-slate-400">Nenhum convite pendente.</td>
-          </tr>
-        </tbody>
-      </table>
+      <h2 class="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-50">Convites pendentes</h2>
+      <BaseCard class="overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-left text-slate-500 dark:bg-slate-900/40 dark:text-slate-400">
+            <tr>
+              <th class="px-4 py-2">E-mail</th>
+              <th class="px-4 py-2">Papel</th>
+              <th class="px-4 py-2">Expira em</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="invite in invites" :key="invite.id" class="border-t border-slate-100 dark:border-slate-700">
+              <td class="px-4 py-2 text-slate-900 dark:text-slate-100">{{ invite.email }}</td>
+              <td class="px-4 py-2 text-slate-600 dark:text-slate-400">{{ invite.role }}</td>
+              <td class="px-4 py-2 text-slate-600 dark:text-slate-400">{{ formatDate(invite.expiresAt) }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <EmptyState v-if="invites.length === 0" message="Nenhum convite pendente." />
+      </BaseCard>
     </template>
   </div>
 </template>
