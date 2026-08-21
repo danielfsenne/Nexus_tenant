@@ -3,7 +3,10 @@ package com.nexus.backend.order;
 import com.nexus.backend.audit.AuditService;
 import com.nexus.backend.common.ResourceNotFoundException;
 import com.nexus.backend.domain.AuditAction;
+import com.nexus.backend.domain.Customer;
 import com.nexus.backend.domain.Order;
+import com.nexus.backend.order.processing.OrderCreatedEvent;
+import com.nexus.backend.order.processing.OrderProcessingProducer;
 import com.nexus.backend.repository.CustomerRepository;
 import com.nexus.backend.repository.OrderRepository;
 import com.nexus.backend.security.TenantContext;
@@ -21,17 +24,20 @@ public class OrderService {
     private final CustomerRepository customerRepository;
     private final AuditService auditService;
     private final NotificationService notificationService;
+    private final OrderProcessingProducer orderProcessingProducer;
 
     public OrderService(
             OrderRepository orderRepository,
             CustomerRepository customerRepository,
             AuditService auditService,
-            NotificationService notificationService
+            NotificationService notificationService,
+            OrderProcessingProducer orderProcessingProducer
     ) {
         this.orderRepository = orderRepository;
         this.customerRepository = customerRepository;
         this.auditService = auditService;
         this.notificationService = notificationService;
+        this.orderProcessingProducer = orderProcessingProducer;
     }
 
     public List<OrderResponse> findAll() {
@@ -47,7 +53,7 @@ public class OrderService {
     public OrderResponse create(OrderRequest request) {
         Long tenantId = TenantContext.get();
 
-        customerRepository.findByIdAndTenantId(request.customerId(), tenantId)
+        Customer customer = customerRepository.findByIdAndTenantId(request.customerId(), tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado"));
 
         Order order = Order.builder()
@@ -59,6 +65,11 @@ public class OrderService {
         Order saved = orderRepository.save(order);
         auditService.record(AuditAction.CREATED, ENTITY_TYPE, saved.getId(), "total " + saved.getTotal());
         notificationService.notifyTenant(tenantId, "ORDER_CREATED", "Nova venda registrada: R$ " + saved.getTotal());
+
+        orderProcessingProducer.publish(new OrderCreatedEvent(
+                saved.getId(), tenantId, customer.getId(), customer.getName(), saved.getTotal()
+        ));
+
         return OrderResponse.from(saved);
     }
 
