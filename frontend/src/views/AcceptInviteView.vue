@@ -4,6 +4,9 @@ import { useRoute, useRouter } from 'vue-router'
 import http, { extractErrorMessage } from '../lib/http'
 import { useAuthStore } from '../stores/auth'
 import type { AuthResponse } from '../stores/auth'
+import BaseInput from '../components/ui/BaseInput.vue'
+import BaseButton from '../components/ui/BaseButton.vue'
+import Alert from '../components/ui/Alert.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -35,44 +38,22 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-slate-50">
-    <div class="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
-      <h1 class="mb-1 text-2xl font-semibold text-slate-900">Nexus</h1>
-      <p class="mb-6 text-sm text-slate-500">Complete seu cadastro para entrar na equipe</p>
+  <div class="flex min-h-screen items-center justify-center bg-slate-50 px-4 dark:bg-slate-900">
+    <div class="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <h1 class="mb-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">Nexus</h1>
+      <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Complete seu cadastro para entrar na equipe</p>
 
-      <p v-if="!token" class="text-sm text-red-600">Link de convite inválido.</p>
+      <Alert v-if="!token" variant="error">Link de convite inválido.</Alert>
 
       <form v-else class="space-y-4" @submit.prevent="handleSubmit">
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Seu nome</label>
-          <input
-            v-model="name"
-            type="text"
-            required
-            class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-          />
-        </div>
+        <BaseInput v-model="name" label="Seu nome" required />
+        <BaseInput v-model="password" label="Senha" type="password" :minlength="6" required />
 
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Senha</label>
-          <input
-            v-model="password"
-            type="password"
-            minlength="6"
-            required
-            class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-          />
-        </div>
+        <Alert v-if="errorMessage" variant="error">{{ errorMessage }}</Alert>
 
-        <p v-if="errorMessage" class="text-sm text-red-600">{{ errorMessage }}</p>
-
-        <button
-          type="submit"
-          :disabled="loading"
-          class="w-full rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-        >
+        <BaseButton type="submit" :loading="loading" class="w-full">
           {{ loading ? 'Entrando...' : 'Aceitar convite e entrar' }}
-        </button>
+        </BaseButton>
       </form>
     </div>
   </div>

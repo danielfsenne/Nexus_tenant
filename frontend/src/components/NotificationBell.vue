@@ -26,7 +26,7 @@ function formatTime(value: string) {
 <template>
   <div ref="rootRef" class="relative">
     <button
-      class="relative rounded-md p-2 text-slate-500 hover:bg-slate-100"
+      class="relative rounded-md p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700"
       :title="notifications.connected ? 'Conectado' : 'Desconectado'"
       @click="toggle"
     >
@@ -49,24 +49,24 @@ function formatTime(value: string) {
 
     <div
       v-if="open"
-      class="absolute right-0 z-10 mt-2 w-80 rounded-lg border border-slate-200 bg-white shadow-lg"
+      class="absolute right-0 z-10 mt-2 w-80 rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800"
     >
-      <div class="border-b border-slate-100 px-4 py-2 text-sm font-semibold text-slate-900">
+      <div class="border-b border-slate-100 px-4 py-2 text-sm font-semibold text-slate-900 dark:border-slate-700 dark:text-slate-50">
         Notificações
       </div>
 
       <div class="max-h-80 overflow-y-auto">
-        <p v-if="notifications.items.length === 0" class="px-4 py-6 text-center text-sm text-slate-400">
+        <p v-if="notifications.items.length === 0" class="px-4 py-6 text-center text-sm text-slate-400 dark:text-slate-500">
           Nenhuma notificação ainda.
         </p>
 
         <div
           v-for="(item, index) in notifications.items"
           :key="index"
-          class="border-b border-slate-50 px-4 py-3 last:border-b-0"
+          class="border-b border-slate-50 px-4 py-3 last:border-b-0 dark:border-slate-700/50"
         >
-          <p class="text-sm text-slate-700">{{ item.message }}</p>
-          <p class="mt-0.5 text-xs text-slate-400">{{ formatTime(item.createdAt) }}</p>
+          <p class="text-sm text-slate-700 dark:text-slate-200">{{ item.message }}</p>
+          <p class="mt-0.5 text-xs text-slate-400 dark:text-slate-500">{{ formatTime(item.createdAt) }}</p>
         </div>
       </div>
     </div>

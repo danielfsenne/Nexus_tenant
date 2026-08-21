@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
 import NotificationBell from '../components/NotificationBell.vue'
+import ThemeToggle from '../components/ThemeToggle.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -32,11 +33,11 @@ function handleLogout() {
 </script>
 
 <template>
-  <div class="flex min-h-screen bg-slate-50">
-    <aside class="w-56 shrink-0 border-r border-slate-200 bg-white">
-      <div class="border-b border-slate-200 px-4 py-4">
-        <p class="text-lg font-semibold text-slate-900">Nexus</p>
-        <p class="text-xs text-slate-500">Tenant #{{ auth.tenantId }} · {{ auth.role }}</p>
+  <div class="flex min-h-screen bg-slate-50 dark:bg-slate-900">
+    <aside class="w-56 shrink-0 border-r border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+      <div class="border-b border-slate-200 px-4 py-4 dark:border-slate-700">
+        <p class="text-lg font-semibold text-slate-900 dark:text-slate-50">Nexus</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Tenant #{{ auth.tenantId }} · {{ auth.role }}</p>
       </div>
 
       <nav class="flex flex-col gap-1 p-3">
@@ -44,8 +45,8 @@ function handleLogout() {
           v-for="link in links"
           :key="link.label"
           :to="link.to"
-          class="rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
-          active-class="bg-slate-900 text-white hover:bg-slate-900"
+          class="rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
+          active-class="!bg-brand-600 !text-white hover:!bg-brand-600"
         >
           {{ link.label }}
         </RouterLink>
@@ -53,7 +54,7 @@ function handleLogout() {
 
       <div class="mt-auto p-3">
         <button
-          class="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-slate-600 hover:bg-slate-100"
+          class="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
           @click="handleLogout"
         >
           Sair
@@ -62,7 +63,8 @@ function handleLogout() {
     </aside>
 
     <div class="flex flex-1 flex-col">
-      <header class="flex justify-end border-b border-slate-200 bg-white px-6 py-3">
+      <header class="flex justify-end gap-1 border-b border-slate-200 bg-white px-6 py-3 dark:border-slate-700 dark:bg-slate-800">
+        <ThemeToggle />
         <NotificationBell />
       </header>
 

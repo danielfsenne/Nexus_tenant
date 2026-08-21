@@ -2,6 +2,9 @@
 import { onMounted, ref, computed } from 'vue'
 import http from '../lib/http'
 import UsageBar from '../components/UsageBar.vue'
+import PageHeader from '../components/ui/PageHeader.vue'
+import StatCard from '../components/ui/StatCard.vue'
+import Spinner from '../components/ui/Spinner.vue'
 import type { Customer, Product, Order, TenantUsage } from '../types'
 
 const customers = ref<Customer[]>([])
@@ -38,40 +41,31 @@ function formatCurrency(value: number) {
 
 <template>
   <div>
-    <h1 class="mb-6 text-xl font-semibold text-slate-900">Dashboard</h1>
+    <PageHeader title="Dashboard" :subtitle="tenantUsage ? tenantUsage.companyName : undefined" />
 
-    <div v-if="loading" class="text-sm text-slate-500">Carregando...</div>
+    <Spinner v-if="loading" />
 
-    <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-      <div class="rounded-lg border border-slate-200 bg-white p-5">
-        <p class="text-sm text-slate-500">Clientes</p>
-        <p class="mt-1 text-2xl font-semibold text-slate-900">{{ customers.length }}</p>
+    <template v-else>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard label="Clientes" :value="customers.length" />
+        <StatCard label="Produtos" :value="products.length" />
+        <StatCard label="Vendas" :value="formatCurrency(totalSales)" />
       </div>
 
-      <div class="rounded-lg border border-slate-200 bg-white p-5">
-        <p class="text-sm text-slate-500">Produtos</p>
-        <p class="mt-1 text-2xl font-semibold text-slate-900">{{ products.length }}</p>
-      </div>
+      <div v-if="tenantUsage" class="mt-6 rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <div class="mb-4 flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-50">Uso do plano</h2>
+          <span class="rounded-full bg-brand-600 px-3 py-1 text-xs font-medium text-white">
+            {{ tenantUsage.plan }}
+          </span>
+        </div>
 
-      <div class="rounded-lg border border-slate-200 bg-white p-5">
-        <p class="text-sm text-slate-500">Vendas</p>
-        <p class="mt-1 text-2xl font-semibold text-slate-900">{{ formatCurrency(totalSales) }}</p>
+        <div class="space-y-4">
+          <UsageBar label="Usuários" :current="tenantUsage.usage.users" :max="tenantUsage.limits.maxUsers" />
+          <UsageBar label="Clientes" :current="tenantUsage.usage.customers" :max="tenantUsage.limits.maxCustomers" />
+          <UsageBar label="Produtos" :current="tenantUsage.usage.products" :max="tenantUsage.limits.maxProducts" />
+        </div>
       </div>
-    </div>
-
-    <div v-if="tenantUsage" class="mt-6 rounded-lg border border-slate-200 bg-white p-5">
-      <div class="mb-4 flex items-center justify-between">
-        <h2 class="text-sm font-semibold text-slate-900">Uso do plano</h2>
-        <span class="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white">
-          {{ tenantUsage.plan }}
-        </span>
-      </div>
-
-      <div class="space-y-4">
-        <UsageBar label="Usuários" :current="tenantUsage.usage.users" :max="tenantUsage.limits.maxUsers" />
-        <UsageBar label="Clientes" :current="tenantUsage.usage.customers" :max="tenantUsage.limits.maxCustomers" />
-        <UsageBar label="Produtos" :current="tenantUsage.usage.products" :max="tenantUsage.limits.maxProducts" />
-      </div>
-    </div>
+    </template>
   </div>
 </template>

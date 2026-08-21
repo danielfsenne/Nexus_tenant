@@ -19,14 +19,14 @@ const isNearLimit = computed(() => props.max !== null && percentage.value >= 80)
 <template>
   <div>
     <div class="mb-1 flex items-center justify-between text-sm">
-      <span class="text-slate-600">{{ label }}</span>
-      <span class="text-slate-500">{{ current }} / {{ max ?? '∞' }}</span>
+      <span class="text-slate-600 dark:text-slate-300">{{ label }}</span>
+      <span class="text-slate-500 dark:text-slate-400">{{ current }} / {{ max ?? '∞' }}</span>
     </div>
 
-    <div v-if="max !== null" class="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+    <div v-if="max !== null" class="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
       <div
         class="h-full rounded-full transition-all"
-        :class="isNearLimit ? 'bg-red-500' : 'bg-slate-900'"
+        :class="isNearLimit ? 'bg-red-500' : 'bg-brand-600'"
         :style="{ width: percentage + '%' }"
       />
     </div>
