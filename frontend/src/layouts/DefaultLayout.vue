@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
 import NotificationBell from '../components/NotificationBell.vue'
 import ThemeToggle from '../components/ThemeToggle.vue'
 
 const auth = useAuthStore()
+const route = useRoute()
 const router = useRouter()
 const notifications = useNotificationsStore()
 
@@ -25,6 +26,10 @@ const links = computed(() => [
       ]
     : []),
 ])
+
+function isActiveLink(name: string) {
+  return route.name === name
+}
 
 function handleLogout() {
   auth.logout()
@@ -45,8 +50,12 @@ function handleLogout() {
           v-for="link in links"
           :key="link.label"
           :to="link.to"
-          class="rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
-          active-class="!bg-brand-600 !text-white hover:!bg-brand-600"
+          class="rounded-md px-3 py-2 text-sm font-medium transition-colors"
+          :class="
+            isActiveLink(link.to.name)
+              ? 'bg-brand-600 text-white'
+              : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700'
+          "
         >
           {{ link.label }}
         </RouterLink>
