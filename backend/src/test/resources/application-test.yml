@@ -15,6 +15,11 @@ spring:
   cache:
     type: simple
 
+  rabbitmq:
+    listener:
+      simple:
+        auto-startup: false
+
 nexus:
   jwt:
     secret: segredo-de-teste-apenas-para-testes-automatizados-0000
@@ -23,3 +28,8 @@ nexus:
     enabled: false
     auth-max-attempts: 10
     auth-window-seconds: 60
+  order-processing:
+    max-attempts: 3
+    base-delay-ms: 3000
+  maintenance:
+    cron: "0 0 3 * * *"

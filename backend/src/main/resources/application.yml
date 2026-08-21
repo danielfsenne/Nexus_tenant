@@ -29,6 +29,15 @@ spring:
   cache:
     type: redis
 
+  rabbitmq:
+    host: ${NEXUS_RABBITMQ_HOST:localhost}
+    port: ${NEXUS_RABBITMQ_PORT:5672}
+    username: ${NEXUS_RABBITMQ_USER:nexus}
+    password: ${NEXUS_RABBITMQ_PASSWORD:nexus}
+    listener:
+      simple:
+        auto-startup: ${NEXUS_RABBITMQ_LISTENER_ENABLED:true}
+
 server:
   port: 8080
 
@@ -43,3 +52,8 @@ nexus:
     enabled: true
     auth-max-attempts: 10
     auth-window-seconds: 60
+  order-processing:
+    max-attempts: 3
+    base-delay-ms: 3000
+  maintenance:
+    cron: "0 0 3 * * *"
