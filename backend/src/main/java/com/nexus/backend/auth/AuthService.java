@@ -7,6 +7,7 @@ import com.nexus.backend.domain.Plan;
 import com.nexus.backend.domain.Role;
 import com.nexus.backend.domain.Tenant;
 import com.nexus.backend.domain.User;
+import com.nexus.backend.mail.MailService;
 import com.nexus.backend.repository.PasswordResetTokenRepository;
 import com.nexus.backend.repository.TenantRepository;
 import com.nexus.backend.repository.UserRepository;
@@ -33,6 +34,7 @@ public class AuthService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final MailService mailService;
     private final String frontendUrl;
     private final long passwordResetExpirationHours;
 
@@ -42,6 +44,7 @@ public class AuthService {
             PasswordResetTokenRepository passwordResetTokenRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
+            MailService mailService,
             @Value("${nexus.frontend-url}") String frontendUrl,
             @Value("${nexus.password-reset-expiration-hours}") long passwordResetExpirationHours
     ) {
@@ -50,6 +53,7 @@ public class AuthService {
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.mailService = mailService;
         this.frontendUrl = frontendUrl;
         this.passwordResetExpirationHours = passwordResetExpirationHours;
     }
@@ -107,6 +111,15 @@ public class AuthService {
 
         String resetLink = frontendUrl + "/redefinir-senha?token=" + resetToken.getToken();
         log.info("Redefinição de senha solicitada para {}. Link: {}", user.get().getEmail(), resetLink);
+
+        mailService.send(
+                user.get().getEmail(),
+                "Redefinição de senha - Nexus",
+                "Recebemos uma solicitação para redefinir sua senha no Nexus.\n\n"
+                        + "Clique no link abaixo para criar uma nova senha:\n" + resetLink + "\n\n"
+                        + "Este link expira em " + passwordResetExpirationHours + " horas. "
+                        + "Se você não solicitou isso, pode ignorar este e-mail."
+        );
     }
 
     @Transactional

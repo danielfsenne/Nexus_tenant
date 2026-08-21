@@ -7,8 +7,11 @@ import com.nexus.backend.common.PlanLimitService;
 import com.nexus.backend.common.ResourceNotFoundException;
 import com.nexus.backend.domain.AuditAction;
 import com.nexus.backend.domain.Invite;
+import com.nexus.backend.domain.Tenant;
 import com.nexus.backend.domain.User;
+import com.nexus.backend.mail.MailService;
 import com.nexus.backend.repository.InviteRepository;
+import com.nexus.backend.repository.TenantRepository;
 import com.nexus.backend.repository.UserRepository;
 import com.nexus.backend.security.JwtService;
 import com.nexus.backend.security.TenantContext;
@@ -32,32 +35,38 @@ public class InviteService {
 
     private final InviteRepository inviteRepository;
     private final UserRepository userRepository;
+    private final TenantRepository tenantRepository;
     private final PlanLimitService planLimitService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuditService auditService;
     private final NotificationService notificationService;
+    private final MailService mailService;
     private final String frontendUrl;
     private final long inviteExpirationDays;
 
     public InviteService(
             InviteRepository inviteRepository,
             UserRepository userRepository,
+            TenantRepository tenantRepository,
             PlanLimitService planLimitService,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             AuditService auditService,
             NotificationService notificationService,
+            MailService mailService,
             @Value("${nexus.frontend-url}") String frontendUrl,
             @Value("${nexus.invite-expiration-days}") long inviteExpirationDays
     ) {
         this.inviteRepository = inviteRepository;
         this.userRepository = userRepository;
+        this.tenantRepository = tenantRepository;
         this.planLimitService = planLimitService;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.auditService = auditService;
         this.notificationService = notificationService;
+        this.mailService = mailService;
         this.frontendUrl = frontendUrl;
         this.inviteExpirationDays = inviteExpirationDays;
     }
@@ -86,6 +95,17 @@ public class InviteService {
 
         String acceptLink = frontendUrl + "/aceitar-convite?token=" + invite.getToken();
         log.info("Convite criado para {} (papel {}). Link de aceite: {}", invite.getEmail(), invite.getRole(), acceptLink);
+
+        Tenant tenant = tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Empresa não encontrada"));
+
+        mailService.send(
+                invite.getEmail(),
+                "Convite para " + tenant.getName() + " no Nexus",
+                "Você foi convidado para participar da empresa " + tenant.getName() + " no Nexus, como " + invite.getRole() + ".\n\n"
+                        + "Clique no link abaixo para criar sua conta:\n" + acceptLink + "\n\n"
+                        + "Este link expira em " + inviteExpirationDays + " dias."
+        );
 
         auditService.record(AuditAction.INVITED, ENTITY_TYPE, null, invite.getEmail() + " (" + invite.getRole() + ")");
 
