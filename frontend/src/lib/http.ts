@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { useAuthStore } from '../stores/auth'
+import { useToastStore } from '../stores/toast'
 import router from '../router'
 
 const http = axios.create({
@@ -17,11 +18,21 @@ http.interceptors.request.use((config) => {
 http.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status
+    const toast = useToastStore()
+
+    if (status === 401) {
       const auth = useAuthStore()
       auth.logout()
       router.push('/login')
+    } else if (status === undefined) {
+      toast.error('Não foi possível conectar ao servidor.')
+    } else if (status === 403) {
+      toast.error('Você não tem permissão para realizar essa ação.')
+    } else if (status >= 500) {
+      toast.error('Erro no servidor. Tente novamente em instantes.')
     }
+
     return Promise.reject(error)
   },
 )

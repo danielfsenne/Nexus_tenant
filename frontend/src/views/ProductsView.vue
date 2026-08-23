@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import http, { extractErrorMessage } from '../lib/http'
+import { useToastStore } from '../stores/toast'
 import type { Product } from '../types'
 import PageHeader from '../components/ui/PageHeader.vue'
 import BaseCard from '../components/ui/BaseCard.vue'
@@ -10,6 +11,8 @@ import Alert from '../components/ui/Alert.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import Spinner from '../components/ui/Spinner.vue'
 import ConfirmDialog from '../components/ui/ConfirmDialog.vue'
+
+const toast = useToastStore()
 
 const products = ref<Product[]>([])
 const loading = ref(true)
@@ -38,6 +41,7 @@ async function loadProducts() {
 async function handleSubmit() {
   saving.value = true
   errorMessage.value = ''
+  const wasEditing = editingId.value !== null
   try {
     const payload = { name: name.value, price: price.value }
     if (editingId.value) {
@@ -47,6 +51,7 @@ async function handleSubmit() {
     }
     resetForm()
     await loadProducts()
+    toast.success(wasEditing ? 'Produto atualizado.' : 'Produto adicionado.')
   } catch (error) {
     errorMessage.value = extractErrorMessage(error, 'Não foi possível salvar o produto.')
   } finally {
@@ -72,11 +77,13 @@ function confirmDelete(product: Product) {
 
 async function deleteProduct() {
   if (!deleteTarget.value) return
+  const name = deleteTarget.value.name
   deleting.value = true
   try {
     await http.delete(`/products/${deleteTarget.value.id}`)
     deleteTarget.value = null
     await loadProducts()
+    toast.success(`Produto '${name}' excluído.`)
   } finally {
     deleting.value = false
   }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import http, { extractErrorMessage } from '../lib/http'
+import { useToastStore } from '../stores/toast'
 import type { Customer } from '../types'
 import PageHeader from '../components/ui/PageHeader.vue'
 import BaseCard from '../components/ui/BaseCard.vue'
@@ -10,6 +11,8 @@ import Alert from '../components/ui/Alert.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import Spinner from '../components/ui/Spinner.vue'
 import ConfirmDialog from '../components/ui/ConfirmDialog.vue'
+
+const toast = useToastStore()
 
 const customers = ref<Customer[]>([])
 const loading = ref(true)
@@ -38,6 +41,7 @@ async function loadCustomers() {
 async function handleSubmit() {
   saving.value = true
   errorMessage.value = ''
+  const wasEditing = editingId.value !== null
   try {
     if (editingId.value) {
       await http.put(`/customers/${editingId.value}`, { name: name.value, email: email.value })
@@ -46,6 +50,7 @@ async function handleSubmit() {
     }
     resetForm()
     await loadCustomers()
+    toast.success(wasEditing ? 'Cliente atualizado.' : 'Cliente adicionado.')
   } catch (error) {
     errorMessage.value = extractErrorMessage(error, 'Não foi possível salvar o cliente.')
   } finally {
@@ -71,11 +76,13 @@ function confirmDelete(customer: Customer) {
 
 async function deleteCustomer() {
   if (!deleteTarget.value) return
+  const name = deleteTarget.value.name
   deleting.value = true
   try {
     await http.delete(`/customers/${deleteTarget.value.id}`)
     deleteTarget.value = null
     await loadCustomers()
+    toast.success(`Cliente '${name}' excluído.`)
   } finally {
     deleting.value = false
   }

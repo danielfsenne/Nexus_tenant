@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
 import http, { extractErrorMessage } from '../lib/http'
+import { useToastStore } from '../stores/toast'
 import type { Order, Customer } from '../types'
 import PageHeader from '../components/ui/PageHeader.vue'
 import BaseCard from '../components/ui/BaseCard.vue'
@@ -10,6 +11,8 @@ import BaseButton from '../components/ui/BaseButton.vue'
 import Alert from '../components/ui/Alert.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import Spinner from '../components/ui/Spinner.vue'
+
+const toast = useToastStore()
 
 const orders = ref<Order[]>([])
 const customers = ref<Customer[]>([])
@@ -50,6 +53,7 @@ async function handleSubmit() {
     customerId.value = null
     total.value = null
     await loadData()
+    toast.success('Venda registrada.')
   } catch (error) {
     errorMessage.value = extractErrorMessage(error, 'Não foi possível registrar a venda.')
   } finally {
