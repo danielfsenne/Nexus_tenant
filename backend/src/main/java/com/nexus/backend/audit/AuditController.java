@@ -1,12 +1,11 @@
 package com.nexus.backend.audit;
 
+import com.nexus.backend.common.PageResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/audit-logs")
@@ -20,7 +19,10 @@ public class AuditController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public List<AuditLogResponse> findRecent(@RequestParam(defaultValue = "100") int limit) {
-        return auditService.findRecent(Math.min(limit, 500));
+    public PageResponse<AuditLogResponse> findAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return auditService.findAll(page, Math.min(size, 100));
     }
 }

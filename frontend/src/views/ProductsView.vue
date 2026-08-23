@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 import http, { extractErrorMessage } from '../lib/http'
 import { useToastStore } from '../stores/toast'
-import type { Product } from '../types'
+import type { Product, PageResponse } from '../types'
 import PageHeader from '../components/ui/PageHeader.vue'
 import BaseCard from '../components/ui/BaseCard.vue'
 import BaseInput from '../components/ui/BaseInput.vue'
@@ -11,10 +11,14 @@ import Alert from '../components/ui/Alert.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import Spinner from '../components/ui/Spinner.vue'
 import ConfirmDialog from '../components/ui/ConfirmDialog.vue'
+import Pagination from '../components/ui/Pagination.vue'
 
 const toast = useToastStore()
 
 const products = ref<Product[]>([])
+const page = ref(0)
+const totalPages = ref(0)
+const totalElements = ref(0)
 const loading = ref(true)
 
 const name = ref('')
@@ -29,13 +33,25 @@ const deleting = ref(false)
 async function loadProducts() {
   loading.value = true
   try {
-    const { data } = await http.get<Product[]>('/products')
-    products.value = data
+    const { data } = await http.get<PageResponse<Product>>('/products', { params: { page: page.value, size: 10 } })
+    products.value = data.content
+    totalPages.value = data.totalPages
+    totalElements.value = data.totalElements
+
+    if (data.content.length === 0 && page.value > 0) {
+      page.value -= 1
+      await loadProducts()
+    }
   } catch {
     // erro de rede/autenticação já é tratado pelo interceptor global
   } finally {
     loading.value = false
   }
+}
+
+function changePage(newPage: number) {
+  page.value = newPage
+  loadProducts()
 }
 
 async function handleSubmit() {
@@ -50,6 +66,7 @@ async function handleSubmit() {
       await http.post('/products', payload)
     }
     resetForm()
+    if (!wasEditing) page.value = 0
     await loadProducts()
     toast.success(wasEditing ? 'Produto atualizado.' : 'Produto adicionado.')
   } catch (error) {
@@ -153,6 +170,8 @@ onMounted(loadProducts)
       </table>
 
       <EmptyState v-if="products.length === 0" message="Nenhum produto cadastrado." />
+
+      <Pagination :page="page" :total-pages="totalPages" :total-elements="totalElements" @update:page="changePage" />
     </BaseCard>
 
     <ConfirmDialog

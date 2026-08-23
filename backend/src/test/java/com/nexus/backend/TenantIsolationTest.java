@@ -47,8 +47,9 @@ class TenantIsolationTest {
         mockMvc.perform(get("/customers")
                         .header("Authorization", "Bearer " + tokenEmpresaB))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(0));
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(0))
+                .andExpect(jsonPath("$.totalElements").value(0));
     }
 
     @Test

@@ -26,9 +26,6 @@ spring:
       host: ${NEXUS_REDIS_HOST:localhost}
       port: ${NEXUS_REDIS_PORT:6379}
 
-  cache:
-    type: redis
-
   rabbitmq:
     host: ${NEXUS_RABBITMQ_HOST:localhost}
     port: ${NEXUS_RABBITMQ_PORT:5672}

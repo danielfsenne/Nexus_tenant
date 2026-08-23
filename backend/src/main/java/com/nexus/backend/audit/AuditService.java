@@ -1,5 +1,6 @@
 package com.nexus.backend.audit;
 
+import com.nexus.backend.common.PageResponse;
 import com.nexus.backend.domain.AuditAction;
 import com.nexus.backend.domain.AuditLog;
 import com.nexus.backend.repository.AuditLogRepository;
@@ -7,8 +8,6 @@ import com.nexus.backend.security.CurrentUserContext;
 import com.nexus.backend.security.TenantContext;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class AuditService {
@@ -19,10 +18,10 @@ public class AuditService {
         this.auditLogRepository = auditLogRepository;
     }
 
-    public List<AuditLogResponse> findRecent(int limit) {
-        return auditLogRepository.findAllByTenantIdOrderByCreatedAtDesc(TenantContext.get(), PageRequest.of(0, limit)).stream()
-                .map(AuditLogResponse::from)
-                .toList();
+    public PageResponse<AuditLogResponse> findAll(int page, int size) {
+        var pageable = PageRequest.of(page, size);
+        var result = auditLogRepository.findAllByTenantIdOrderByCreatedAtDesc(TenantContext.get(), pageable);
+        return PageResponse.from(result, AuditLogResponse::from);
     }
 
     /**

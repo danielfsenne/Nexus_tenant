@@ -1,6 +1,7 @@
 package com.nexus.backend.order;
 
 import com.nexus.backend.audit.AuditService;
+import com.nexus.backend.common.PageResponse;
 import com.nexus.backend.common.ResourceNotFoundException;
 import com.nexus.backend.domain.AuditAction;
 import com.nexus.backend.domain.Customer;
@@ -11,9 +12,9 @@ import com.nexus.backend.repository.CustomerRepository;
 import com.nexus.backend.repository.OrderRepository;
 import com.nexus.backend.security.TenantContext;
 import com.nexus.backend.websocket.NotificationService;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class OrderService {
@@ -40,10 +41,10 @@ public class OrderService {
         this.orderProcessingProducer = orderProcessingProducer;
     }
 
-    public List<OrderResponse> findAll() {
-        return orderRepository.findAllByTenantId(TenantContext.get()).stream()
-                .map(OrderResponse::from)
-                .toList();
+    public PageResponse<OrderResponse> findAll(int page, int size) {
+        var pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        var result = orderRepository.findAllByTenantId(TenantContext.get(), pageable);
+        return PageResponse.from(result, OrderResponse::from);
     }
 
     public OrderResponse findById(Long id) {

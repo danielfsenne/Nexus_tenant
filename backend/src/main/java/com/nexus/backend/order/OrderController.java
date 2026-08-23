@@ -1,11 +1,10 @@
 package com.nexus.backend.order;
 
+import com.nexus.backend.common.PageResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/orders")
@@ -18,8 +17,11 @@ public class OrderController {
     }
 
     @GetMapping
-    public List<OrderResponse> findAll() {
-        return orderService.findAll();
+    public PageResponse<OrderResponse> findAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return orderService.findAll(page, Math.min(size, 200));
     }
 
     @GetMapping("/{id}")

@@ -1,24 +1,21 @@
 package com.nexus.backend.customer;
 
 import com.nexus.backend.audit.AuditService;
+import com.nexus.backend.common.PageResponse;
 import com.nexus.backend.common.PlanLimitService;
 import com.nexus.backend.common.ResourceNotFoundException;
 import com.nexus.backend.domain.AuditAction;
 import com.nexus.backend.domain.Customer;
 import com.nexus.backend.repository.CustomerRepository;
 import com.nexus.backend.security.TenantContext;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class CustomerService {
 
     private static final String ENTITY_TYPE = "CUSTOMER";
-    private static final String CACHE_NAME = "customers";
-    private static final String CACHE_KEY = "T(com.nexus.backend.security.TenantContext).get()";
 
     private final CustomerRepository customerRepository;
     private final PlanLimitService planLimitService;
@@ -30,18 +27,16 @@ public class CustomerService {
         this.auditService = auditService;
     }
 
-    @Cacheable(value = CACHE_NAME, key = CACHE_KEY)
-    public List<CustomerResponse> findAll() {
-        return customerRepository.findAllByTenantId(TenantContext.get()).stream()
-                .map(CustomerResponse::from)
-                .toList();
+    public PageResponse<CustomerResponse> findAll(int page, int size) {
+        var pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        var result = customerRepository.findAllByTenantId(TenantContext.get(), pageable);
+        return PageResponse.from(result, CustomerResponse::from);
     }
 
     public CustomerResponse findById(Long id) {
         return CustomerResponse.from(findOwnedByTenant(id));
     }
 
-    @CacheEvict(value = CACHE_NAME, key = CACHE_KEY)
     public CustomerResponse create(CustomerRequest request) {
         Long tenantId = TenantContext.get();
         planLimitService.assertCanCreateCustomer(tenantId, customerRepository.countByTenantId(tenantId));
@@ -57,7 +52,6 @@ public class CustomerService {
         return CustomerResponse.from(saved);
     }
 
-    @CacheEvict(value = CACHE_NAME, key = CACHE_KEY)
     public CustomerResponse update(Long id, CustomerRequest request) {
         Customer customer = findOwnedByTenant(id);
         customer.setName(request.name());
@@ -67,7 +61,6 @@ public class CustomerService {
         return CustomerResponse.from(saved);
     }
 
-    @CacheEvict(value = CACHE_NAME, key = CACHE_KEY)
     public void delete(Long id) {
         Customer customer = findOwnedByTenant(id);
         customerRepository.delete(customer);

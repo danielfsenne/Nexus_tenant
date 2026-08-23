@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import http from '../lib/http'
-import type { AuditLog } from '../types'
+import type { AuditLog, PageResponse } from '../types'
 import PageHeader from '../components/ui/PageHeader.vue'
 import BaseCard from '../components/ui/BaseCard.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import Spinner from '../components/ui/Spinner.vue'
+import Pagination from '../components/ui/Pagination.vue'
 
 const logs = ref<AuditLog[]>([])
+const page = ref(0)
+const totalPages = ref(0)
+const totalElements = ref(0)
 const loading = ref(true)
 
 const actionLabels: Record<AuditLog['action'], string> = {
@@ -31,16 +35,26 @@ function formatDateTime(value: string) {
   return new Date(value).toLocaleString('pt-BR')
 }
 
-onMounted(async () => {
+async function loadLogs() {
+  loading.value = true
   try {
-    const { data } = await http.get<AuditLog[]>('/audit-logs')
-    logs.value = data
+    const { data } = await http.get<PageResponse<AuditLog>>('/audit-logs', { params: { page: page.value, size: 20 } })
+    logs.value = data.content
+    totalPages.value = data.totalPages
+    totalElements.value = data.totalElements
   } catch {
     // erro de rede/autenticação já é tratado pelo interceptor global
   } finally {
     loading.value = false
   }
-})
+}
+
+function changePage(newPage: number) {
+  page.value = newPage
+  loadLogs()
+}
+
+onMounted(loadLogs)
 </script>
 
 <template>
@@ -78,6 +92,8 @@ onMounted(async () => {
       </table>
 
       <EmptyState v-if="logs.length === 0" message="Nenhum evento registrado ainda." />
+
+      <Pagination :page="page" :total-pages="totalPages" :total-elements="totalElements" @update:page="changePage" />
     </BaseCard>
   </div>
 </template>

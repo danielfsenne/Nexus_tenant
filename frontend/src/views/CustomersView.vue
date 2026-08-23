@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 import http, { extractErrorMessage } from '../lib/http'
 import { useToastStore } from '../stores/toast'
-import type { Customer } from '../types'
+import type { Customer, PageResponse } from '../types'
 import PageHeader from '../components/ui/PageHeader.vue'
 import BaseCard from '../components/ui/BaseCard.vue'
 import BaseInput from '../components/ui/BaseInput.vue'
@@ -11,10 +11,14 @@ import Alert from '../components/ui/Alert.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import Spinner from '../components/ui/Spinner.vue'
 import ConfirmDialog from '../components/ui/ConfirmDialog.vue'
+import Pagination from '../components/ui/Pagination.vue'
 
 const toast = useToastStore()
 
 const customers = ref<Customer[]>([])
+const page = ref(0)
+const totalPages = ref(0)
+const totalElements = ref(0)
 const loading = ref(true)
 
 const name = ref('')
@@ -29,13 +33,25 @@ const deleting = ref(false)
 async function loadCustomers() {
   loading.value = true
   try {
-    const { data } = await http.get<Customer[]>('/customers')
-    customers.value = data
+    const { data } = await http.get<PageResponse<Customer>>('/customers', { params: { page: page.value, size: 10 } })
+    customers.value = data.content
+    totalPages.value = data.totalPages
+    totalElements.value = data.totalElements
+
+    if (data.content.length === 0 && page.value > 0) {
+      page.value -= 1
+      await loadCustomers()
+    }
   } catch {
     // erro de rede/autenticação já é tratado pelo interceptor global
   } finally {
     loading.value = false
   }
+}
+
+function changePage(newPage: number) {
+  page.value = newPage
+  loadCustomers()
 }
 
 async function handleSubmit() {
@@ -49,6 +65,7 @@ async function handleSubmit() {
       await http.post('/customers', { name: name.value, email: email.value })
     }
     resetForm()
+    if (!wasEditing) page.value = 0
     await loadCustomers()
     toast.success(wasEditing ? 'Cliente atualizado.' : 'Cliente adicionado.')
   } catch (error) {
@@ -148,6 +165,8 @@ onMounted(loadCustomers)
       </table>
 
       <EmptyState v-if="customers.length === 0" message="Nenhum cliente cadastrado." />
+
+      <Pagination :page="page" :total-pages="totalPages" :total-elements="totalElements" @update:page="changePage" />
     </BaseCard>
 
     <ConfirmDialog

@@ -1,11 +1,10 @@
 package com.nexus.backend.customer;
 
+import com.nexus.backend.common.PageResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/customers")
@@ -18,8 +17,11 @@ public class CustomerController {
     }
 
     @GetMapping
-    public List<CustomerResponse> findAll() {
-        return customerService.findAll();
+    public PageResponse<CustomerResponse> findAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return customerService.findAll(page, Math.min(size, 200));
     }
 
     @GetMapping("/{id}")

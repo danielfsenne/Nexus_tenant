@@ -5,10 +5,10 @@ import UsageBar from '../components/UsageBar.vue'
 import PageHeader from '../components/ui/PageHeader.vue'
 import StatCard from '../components/ui/StatCard.vue'
 import Spinner from '../components/ui/Spinner.vue'
-import type { Customer, Product, Order, TenantUsage } from '../types'
+import type { Order, PageResponse, TenantUsage } from '../types'
 
-const customers = ref<Customer[]>([])
-const products = ref<Product[]>([])
+const customerCount = ref(0)
+const productCount = ref(0)
 const orders = ref<Order[]>([])
 const tenantUsage = ref<TenantUsage | null>(null)
 const loading = ref(true)
@@ -20,14 +20,14 @@ const totalSales = computed(() =>
 onMounted(async () => {
   try {
     const [customersRes, productsRes, ordersRes, usageRes] = await Promise.all([
-      http.get<Customer[]>('/customers'),
-      http.get<Product[]>('/products'),
-      http.get<Order[]>('/orders'),
+      http.get<PageResponse<unknown>>('/customers', { params: { page: 0, size: 1 } }),
+      http.get<PageResponse<unknown>>('/products', { params: { page: 0, size: 1 } }),
+      http.get<PageResponse<Order>>('/orders', { params: { page: 0, size: 1000 } }),
       http.get<TenantUsage>('/tenants/me'),
     ])
-    customers.value = customersRes.data
-    products.value = productsRes.data
-    orders.value = ordersRes.data
+    customerCount.value = customersRes.data.totalElements
+    productCount.value = productsRes.data.totalElements
+    orders.value = ordersRes.data.content
     tenantUsage.value = usageRes.data
   } catch {
     // erro de rede/autenticação já é tratado pelo interceptor global
@@ -49,8 +49,8 @@ function formatCurrency(value: number) {
 
     <template v-else>
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Clientes" :value="customers.length" accent="brand" />
-        <StatCard label="Produtos" :value="products.length" accent="emerald" />
+        <StatCard label="Clientes" :value="customerCount" accent="brand" />
+        <StatCard label="Produtos" :value="productCount" accent="emerald" />
         <StatCard label="Vendas" :value="formatCurrency(totalSales)" accent="amber" />
       </div>
 

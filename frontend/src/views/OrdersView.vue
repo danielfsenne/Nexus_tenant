@@ -2,7 +2,7 @@
 import { onMounted, ref, computed } from 'vue'
 import http, { extractErrorMessage } from '../lib/http'
 import { useToastStore } from '../stores/toast'
-import type { Order, Customer } from '../types'
+import type { Order, Customer, PageResponse } from '../types'
 import PageHeader from '../components/ui/PageHeader.vue'
 import BaseCard from '../components/ui/BaseCard.vue'
 import BaseInput from '../components/ui/BaseInput.vue'
@@ -11,11 +11,15 @@ import BaseButton from '../components/ui/BaseButton.vue'
 import Alert from '../components/ui/Alert.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import Spinner from '../components/ui/Spinner.vue'
+import Pagination from '../components/ui/Pagination.vue'
 
 const toast = useToastStore()
 
 const orders = ref<Order[]>([])
 const customers = ref<Customer[]>([])
+const page = ref(0)
+const totalPages = ref(0)
+const totalElements = ref(0)
 const loading = ref(true)
 
 const customerId = ref<number | null>(null)
@@ -33,16 +37,28 @@ async function loadData() {
   loading.value = true
   try {
     const [ordersRes, customersRes] = await Promise.all([
-      http.get<Order[]>('/orders'),
-      http.get<Customer[]>('/customers'),
+      http.get<PageResponse<Order>>('/orders', { params: { page: page.value, size: 10 } }),
+      http.get<PageResponse<Customer>>('/customers', { params: { page: 0, size: 200 } }),
     ])
-    orders.value = ordersRes.data
-    customers.value = customersRes.data
+    orders.value = ordersRes.data.content
+    totalPages.value = ordersRes.data.totalPages
+    totalElements.value = ordersRes.data.totalElements
+    customers.value = customersRes.data.content
+
+    if (ordersRes.data.content.length === 0 && page.value > 0) {
+      page.value -= 1
+      await loadData()
+    }
   } catch {
     // erro de rede/autenticação já é tratado pelo interceptor global
   } finally {
     loading.value = false
   }
+}
+
+function changePage(newPage: number) {
+  page.value = newPage
+  loadData()
 }
 
 async function handleSubmit() {
@@ -52,6 +68,7 @@ async function handleSubmit() {
     await http.post('/orders', { customerId: Number(customerId.value), total: total.value })
     customerId.value = null
     total.value = null
+    page.value = 0
     await loadData()
     toast.success('Venda registrada.')
   } catch (error) {
@@ -118,6 +135,8 @@ onMounted(loadData)
       </table>
 
       <EmptyState v-if="orders.length === 0" message="Nenhuma venda registrada." />
+
+      <Pagination :page="page" :total-pages="totalPages" :total-elements="totalElements" @update:page="changePage" />
     </BaseCard>
   </div>
 </template>

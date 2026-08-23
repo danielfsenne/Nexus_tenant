@@ -12,9 +12,6 @@ spring:
   flyway:
     enabled: false
 
-  cache:
-    type: simple
-
   rabbitmq:
     listener:
       simple:
