@@ -93,26 +93,26 @@ onMounted(loadCustomers)
 
     <BaseCard v-else class="overflow-hidden">
       <table class="w-full text-sm">
-        <thead class="bg-slate-50 text-left text-slate-500 dark:bg-slate-900/40 dark:text-slate-400">
+        <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
           <tr>
-            <th class="px-4 py-2">Nome</th>
-            <th class="px-4 py-2">E-mail</th>
-            <th class="px-4 py-2"></th>
+            <th class="px-4 py-3">Nome</th>
+            <th class="px-4 py-3">E-mail</th>
+            <th class="px-4 py-3"></th>
           </tr>
         </thead>
         <tbody>
           <tr
             v-for="customer in customers"
             :key="customer.id"
-            class="border-t border-slate-100 dark:border-slate-700"
+            class="border-t border-slate-100 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50"
           >
-            <td class="px-4 py-2 text-slate-900 dark:text-slate-100">{{ customer.name }}</td>
-            <td class="px-4 py-2 text-slate-600 dark:text-slate-400">{{ customer.email }}</td>
-            <td class="px-4 py-2 text-right">
-              <button class="text-slate-600 hover:underline dark:text-slate-400" @click="editCustomer(customer)">
+            <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{{ customer.name }}</td>
+            <td class="px-4 py-3 text-slate-600 dark:text-slate-400">{{ customer.email }}</td>
+            <td class="px-4 py-3 text-right">
+              <button class="font-medium text-brand-600 hover:underline dark:text-brand-400" @click="editCustomer(customer)">
                 Editar
               </button>
-              <button class="ml-3 text-red-600 hover:underline dark:text-red-400" @click="deleteCustomer(customer.id)">
+              <button class="ml-3 font-medium text-red-600 hover:underline dark:text-red-400" @click="deleteCustomer(customer.id)">
                 Excluir
               </button>
             </td>

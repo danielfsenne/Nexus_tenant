@@ -82,41 +82,53 @@ onMounted(loadData)
     <Spinner v-if="loading" />
 
     <template v-else>
-      <h2 class="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-50">Ativos</h2>
+      <h2 class="mb-2.5 text-sm font-semibold text-slate-900 dark:text-slate-50">Ativos</h2>
       <BaseCard class="mb-6 overflow-hidden">
         <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-left text-slate-500 dark:bg-slate-900/40 dark:text-slate-400">
+          <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
             <tr>
-              <th class="px-4 py-2">Nome</th>
-              <th class="px-4 py-2">E-mail</th>
-              <th class="px-4 py-2">Papel</th>
+              <th class="px-4 py-3">Nome</th>
+              <th class="px-4 py-3">E-mail</th>
+              <th class="px-4 py-3">Papel</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="user in users" :key="user.id" class="border-t border-slate-100 dark:border-slate-700">
-              <td class="px-4 py-2 text-slate-900 dark:text-slate-100">{{ user.name }}</td>
-              <td class="px-4 py-2 text-slate-600 dark:text-slate-400">{{ user.email }}</td>
-              <td class="px-4 py-2 text-slate-600 dark:text-slate-400">{{ user.role }}</td>
+            <tr
+              v-for="user in users"
+              :key="user.id"
+              class="border-t border-slate-100 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50"
+            >
+              <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{{ user.name }}</td>
+              <td class="px-4 py-3 text-slate-600 dark:text-slate-400">{{ user.email }}</td>
+              <td class="px-4 py-3">
+                <span class="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700 dark:bg-brand-500/10 dark:text-brand-400">
+                  {{ user.role }}
+                </span>
+              </td>
             </tr>
           </tbody>
         </table>
       </BaseCard>
 
-      <h2 class="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-50">Convites pendentes</h2>
+      <h2 class="mb-2.5 text-sm font-semibold text-slate-900 dark:text-slate-50">Convites pendentes</h2>
       <BaseCard class="overflow-hidden">
         <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-left text-slate-500 dark:bg-slate-900/40 dark:text-slate-400">
+          <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
             <tr>
-              <th class="px-4 py-2">E-mail</th>
-              <th class="px-4 py-2">Papel</th>
-              <th class="px-4 py-2">Expira em</th>
+              <th class="px-4 py-3">E-mail</th>
+              <th class="px-4 py-3">Papel</th>
+              <th class="px-4 py-3">Expira em</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="invite in invites" :key="invite.id" class="border-t border-slate-100 dark:border-slate-700">
-              <td class="px-4 py-2 text-slate-900 dark:text-slate-100">{{ invite.email }}</td>
-              <td class="px-4 py-2 text-slate-600 dark:text-slate-400">{{ invite.role }}</td>
-              <td class="px-4 py-2 text-slate-600 dark:text-slate-400">{{ formatDate(invite.expiresAt) }}</td>
+            <tr
+              v-for="invite in invites"
+              :key="invite.id"
+              class="border-t border-slate-100 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50"
+            >
+              <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{{ invite.email }}</td>
+              <td class="px-4 py-3 text-slate-600 dark:text-slate-400">{{ invite.role }}</td>
+              <td class="px-4 py-3 text-slate-600 dark:text-slate-400">{{ formatDate(invite.expiresAt) }}</td>
             </tr>
           </tbody>
         </table>

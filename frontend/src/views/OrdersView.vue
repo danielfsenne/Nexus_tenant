@@ -88,18 +88,22 @@ onMounted(loadData)
 
     <BaseCard v-else class="overflow-hidden">
       <table class="w-full text-sm">
-        <thead class="bg-slate-50 text-left text-slate-500 dark:bg-slate-900/40 dark:text-slate-400">
+        <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
           <tr>
-            <th class="px-4 py-2">Cliente</th>
-            <th class="px-4 py-2">Total</th>
+            <th class="px-4 py-3">Cliente</th>
+            <th class="px-4 py-3">Total</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="order in orders" :key="order.id" class="border-t border-slate-100 dark:border-slate-700">
-            <td class="px-4 py-2 text-slate-900 dark:text-slate-100">
+          <tr
+            v-for="order in orders"
+            :key="order.id"
+            class="border-t border-slate-100 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50"
+          >
+            <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
               {{ customerNameById.get(order.customerId) ?? `#${order.customerId}` }}
             </td>
-            <td class="px-4 py-2 text-slate-600 dark:text-slate-400">{{ formatCurrency(order.total) }}</td>
+            <td class="px-4 py-3 text-slate-600 dark:text-slate-400">{{ formatCurrency(order.total) }}</td>
           </tr>
         </tbody>
       </table>

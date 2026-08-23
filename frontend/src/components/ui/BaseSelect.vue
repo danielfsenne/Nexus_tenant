@@ -14,14 +14,14 @@ const id = useId()
 
 <template>
   <div>
-    <label v-if="label" :for="id" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+    <label v-if="label" :for="id" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
       {{ label }}
     </label>
     <select
       :id="id"
       :value="modelValue"
       :required="required"
-      class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+      class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 transition-colors focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
       @change="$emit('update:modelValue', ($event.target as HTMLSelectElement).value)"
     >
       <slot />

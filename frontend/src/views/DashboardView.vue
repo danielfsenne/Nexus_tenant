@@ -47,15 +47,18 @@ function formatCurrency(value: number) {
 
     <template v-else>
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Clientes" :value="customers.length" />
-        <StatCard label="Produtos" :value="products.length" />
-        <StatCard label="Vendas" :value="formatCurrency(totalSales)" />
+        <StatCard label="Clientes" :value="customers.length" accent="brand" />
+        <StatCard label="Produtos" :value="products.length" accent="emerald" />
+        <StatCard label="Vendas" :value="formatCurrency(totalSales)" accent="amber" />
       </div>
 
-      <div v-if="tenantUsage" class="mt-6 rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+      <div
+        v-if="tenantUsage"
+        class="mt-6 rounded-xl border border-slate-200/80 bg-white p-5 shadow-softer dark:border-slate-800 dark:bg-slate-900"
+      >
         <div class="mb-4 flex items-center justify-between">
           <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-50">Uso do plano</h2>
-          <span class="rounded-full bg-brand-600 px-3 py-1 text-xs font-medium text-white">
+          <span class="rounded-full bg-brand-600 px-3 py-1 text-xs font-semibold text-white shadow-sm">
             {{ tenantUsage.plan }}
           </span>
         </div>

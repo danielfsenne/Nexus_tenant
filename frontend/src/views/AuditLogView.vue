@@ -46,24 +46,28 @@ onMounted(async () => {
 
     <BaseCard v-else class="overflow-hidden">
       <table class="w-full text-sm">
-        <thead class="bg-slate-50 text-left text-slate-500 dark:bg-slate-900/40 dark:text-slate-400">
+        <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
           <tr>
-            <th class="px-4 py-2">Quando</th>
-            <th class="px-4 py-2">Usuário</th>
-            <th class="px-4 py-2">Ação</th>
-            <th class="px-4 py-2">Detalhes</th>
+            <th class="px-4 py-3">Quando</th>
+            <th class="px-4 py-3">Usuário</th>
+            <th class="px-4 py-3">Ação</th>
+            <th class="px-4 py-3">Detalhes</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="log in logs" :key="log.id" class="border-t border-slate-100 dark:border-slate-700">
-            <td class="whitespace-nowrap px-4 py-2 text-slate-500 dark:text-slate-400">
+          <tr
+            v-for="log in logs"
+            :key="log.id"
+            class="border-t border-slate-100 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50"
+          >
+            <td class="whitespace-nowrap px-4 py-3 text-slate-500 dark:text-slate-400">
               {{ formatDateTime(log.createdAt) }}
             </td>
-            <td class="px-4 py-2 text-slate-900 dark:text-slate-100">{{ log.userEmail ?? '—' }}</td>
-            <td class="px-4 py-2 text-slate-700 dark:text-slate-300">
+            <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{{ log.userEmail ?? '—' }}</td>
+            <td class="px-4 py-3 text-slate-700 dark:text-slate-300">
               {{ actionLabels[log.action] }} {{ entityLabels[log.entityType] ?? log.entityType.toLowerCase() }}
             </td>
-            <td class="px-4 py-2 text-slate-500 dark:text-slate-400">{{ log.details ?? '—' }}</td>
+            <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ log.details ?? '—' }}</td>
           </tr>
         </tbody>
       </table>

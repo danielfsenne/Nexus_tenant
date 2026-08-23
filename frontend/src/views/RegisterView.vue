@@ -37,27 +37,39 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-slate-50 px-4 dark:bg-slate-900">
-    <div class="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-      <h1 class="mb-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">Nexus</h1>
-      <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Cadastre sua empresa</p>
+  <div
+    class="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-white to-brand-50 px-4 py-10 dark:from-slate-950 dark:via-slate-950 dark:to-brand-950"
+  >
+    <div class="w-full max-w-sm">
+      <div class="mb-8 flex flex-col items-center">
+        <div
+          class="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-lg font-bold text-white shadow-soft"
+        >
+          N
+        </div>
+        <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-50">Nexus</h1>
+      </div>
 
-      <form class="space-y-4" @submit.prevent="handleSubmit">
-        <BaseInput v-model="companyName" label="Nome da empresa" required />
-        <BaseInput v-model="adminName" label="Seu nome" required />
-        <BaseInput v-model="email" label="E-mail" type="email" required />
-        <BaseInput v-model="password" label="Senha" type="password" :minlength="6" required />
+      <div class="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-soft dark:border-slate-800 dark:bg-slate-900">
+        <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Cadastre sua empresa</p>
 
-        <Alert v-if="errorMessage" variant="error">{{ errorMessage }}</Alert>
+        <form class="space-y-4" @submit.prevent="handleSubmit">
+          <BaseInput v-model="companyName" label="Nome da empresa" required />
+          <BaseInput v-model="adminName" label="Seu nome" required />
+          <BaseInput v-model="email" label="E-mail" type="email" required />
+          <BaseInput v-model="password" label="Senha" type="password" :minlength="6" required />
 
-        <BaseButton type="submit" :loading="loading" class="w-full">
-          {{ loading ? 'Criando conta...' : 'Criar conta' }}
-        </BaseButton>
-      </form>
+          <Alert v-if="errorMessage" variant="error">{{ errorMessage }}</Alert>
 
-      <p class="mt-4 text-center text-sm text-slate-500 dark:text-slate-400">
+          <BaseButton type="submit" :loading="loading" class="w-full">
+            {{ loading ? 'Criando conta...' : 'Criar conta' }}
+          </BaseButton>
+        </form>
+      </div>
+
+      <p class="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
         Já tem uma conta?
-        <RouterLink to="/login" class="font-medium text-brand-600 hover:underline dark:text-brand-400">
+        <RouterLink to="/login" class="font-semibold text-brand-600 hover:underline dark:text-brand-400">
           Entrar
         </RouterLink>
       </p>
