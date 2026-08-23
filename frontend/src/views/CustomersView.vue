@@ -9,6 +9,7 @@ import BaseButton from '../components/ui/BaseButton.vue'
 import Alert from '../components/ui/Alert.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import Spinner from '../components/ui/Spinner.vue'
+import ConfirmDialog from '../components/ui/ConfirmDialog.vue'
 
 const customers = ref<Customer[]>([])
 const loading = ref(true)
@@ -18,6 +19,9 @@ const email = ref('')
 const editingId = ref<number | null>(null)
 const saving = ref(false)
 const errorMessage = ref('')
+
+const deleteTarget = ref<Customer | null>(null)
+const deleting = ref(false)
 
 async function loadCustomers() {
   loading.value = true
@@ -56,9 +60,20 @@ function resetForm() {
   email.value = ''
 }
 
-async function deleteCustomer(id: number) {
-  await http.delete(`/customers/${id}`)
-  await loadCustomers()
+function confirmDelete(customer: Customer) {
+  deleteTarget.value = customer
+}
+
+async function deleteCustomer() {
+  if (!deleteTarget.value) return
+  deleting.value = true
+  try {
+    await http.delete(`/customers/${deleteTarget.value.id}`)
+    deleteTarget.value = null
+    await loadCustomers()
+  } finally {
+    deleting.value = false
+  }
 }
 
 onMounted(loadCustomers)
@@ -112,7 +127,7 @@ onMounted(loadCustomers)
               <button class="font-medium text-brand-600 hover:underline dark:text-brand-400" @click="editCustomer(customer)">
                 Editar
               </button>
-              <button class="ml-3 font-medium text-red-600 hover:underline dark:text-red-400" @click="deleteCustomer(customer.id)">
+              <button class="ml-3 font-medium text-red-600 hover:underline dark:text-red-400" @click="confirmDelete(customer)">
                 Excluir
               </button>
             </td>
@@ -122,5 +137,14 @@ onMounted(loadCustomers)
 
       <EmptyState v-if="customers.length === 0" message="Nenhum cliente cadastrado." />
     </BaseCard>
+
+    <ConfirmDialog
+      :open="deleteTarget !== null"
+      title="Excluir cliente"
+      :message="`Tem certeza que deseja excluir '${deleteTarget?.name}'? Essa ação não pode ser desfeita.`"
+      :loading="deleting"
+      @confirm="deleteCustomer"
+      @cancel="deleteTarget = null"
+    />
   </div>
 </template>

@@ -9,6 +9,7 @@ import BaseButton from '../components/ui/BaseButton.vue'
 import Alert from '../components/ui/Alert.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import Spinner from '../components/ui/Spinner.vue'
+import ConfirmDialog from '../components/ui/ConfirmDialog.vue'
 
 const products = ref<Product[]>([])
 const loading = ref(true)
@@ -18,6 +19,9 @@ const price = ref<number | null>(null)
 const editingId = ref<number | null>(null)
 const saving = ref(false)
 const errorMessage = ref('')
+
+const deleteTarget = ref<Product | null>(null)
+const deleting = ref(false)
 
 async function loadProducts() {
   loading.value = true
@@ -57,9 +61,20 @@ function resetForm() {
   price.value = null
 }
 
-async function deleteProduct(id: number) {
-  await http.delete(`/products/${id}`)
-  await loadProducts()
+function confirmDelete(product: Product) {
+  deleteTarget.value = product
+}
+
+async function deleteProduct() {
+  if (!deleteTarget.value) return
+  deleting.value = true
+  try {
+    await http.delete(`/products/${deleteTarget.value.id}`)
+    deleteTarget.value = null
+    await loadProducts()
+  } finally {
+    deleting.value = false
+  }
 }
 
 function formatCurrency(value: number) {
@@ -117,7 +132,7 @@ onMounted(loadProducts)
               <button class="font-medium text-brand-600 hover:underline dark:text-brand-400" @click="editProduct(product)">
                 Editar
               </button>
-              <button class="ml-3 font-medium text-red-600 hover:underline dark:text-red-400" @click="deleteProduct(product.id)">
+              <button class="ml-3 font-medium text-red-600 hover:underline dark:text-red-400" @click="confirmDelete(product)">
                 Excluir
               </button>
             </td>
@@ -127,5 +142,14 @@ onMounted(loadProducts)
 
       <EmptyState v-if="products.length === 0" message="Nenhum produto cadastrado." />
     </BaseCard>
+
+    <ConfirmDialog
+      :open="deleteTarget !== null"
+      title="Excluir produto"
+      :message="`Tem certeza que deseja excluir '${deleteTarget?.name}'? Essa ação não pode ser desfeita.`"
+      :loading="deleting"
+      @confirm="deleteProduct"
+      @cancel="deleteTarget = null"
+    />
   </div>
 </template>

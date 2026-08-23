@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
@@ -45,6 +45,15 @@ const initials = computed(() => {
   return role.slice(0, 2).toUpperCase()
 })
 
+const mobileOpen = ref(false)
+
+watch(
+  () => route.fullPath,
+  () => {
+    mobileOpen.value = false
+  },
+)
+
 function handleLogout() {
   auth.logout()
   router.push({ name: 'login' })
@@ -53,7 +62,16 @@ function handleLogout() {
 
 <template>
   <div class="flex min-h-screen bg-slate-50 dark:bg-slate-950">
-    <aside class="flex w-60 shrink-0 flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+    <div
+      v-if="mobileOpen"
+      class="fixed inset-0 z-30 bg-slate-900/50 backdrop-blur-sm lg:hidden"
+      @click="mobileOpen = false"
+    />
+
+    <aside
+      class="fixed inset-y-0 left-0 z-40 flex w-60 shrink-0 -translate-x-full flex-col border-r border-slate-200 bg-white transition-transform duration-200 dark:border-slate-800 dark:bg-slate-900 lg:static lg:translate-x-0"
+      :class="mobileOpen ? 'translate-x-0' : ''"
+    >
       <div class="flex items-center gap-2.5 px-5 py-5">
         <div
           class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-sm font-bold text-white shadow-soft"
@@ -64,6 +82,15 @@ function handleLogout() {
           <p class="truncate text-sm font-bold tracking-tight text-slate-900 dark:text-slate-50">Nexus</p>
           <p class="truncate text-xs text-slate-500 dark:text-slate-400">Tenant #{{ auth.tenantId }}</p>
         </div>
+        <button
+          class="ml-auto rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300 lg:hidden"
+          title="Fechar menu"
+          @click="mobileOpen = false"
+        >
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M6 18 18 6" />
+          </svg>
+        </button>
       </div>
 
       <nav class="flex flex-1 flex-col gap-0.5 px-3 py-2">
@@ -122,12 +149,24 @@ function handleLogout() {
       </div>
     </aside>
 
-    <div class="flex flex-1 flex-col">
+    <div class="flex min-w-0 flex-1 flex-col">
       <header
-        class="flex items-center justify-end gap-1 border-b border-slate-200 bg-white/80 px-6 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80"
+        class="flex items-center justify-between gap-1 border-b border-slate-200 bg-white/80 px-4 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 lg:justify-end lg:px-6"
       >
-        <ThemeToggle />
-        <NotificationBell />
+        <button
+          class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 lg:hidden"
+          title="Abrir menu"
+          @click="mobileOpen = true"
+        >
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16" />
+          </svg>
+        </button>
+
+        <div class="flex items-center gap-1">
+          <ThemeToggle />
+          <NotificationBell />
+        </div>
       </header>
 
       <main class="flex-1 p-6 lg:p-8">
