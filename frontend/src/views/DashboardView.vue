@@ -29,6 +29,8 @@ onMounted(async () => {
     products.value = productsRes.data
     orders.value = ordersRes.data
     tenantUsage.value = usageRes.data
+  } catch {
+    // erro de rede/autenticação já é tratado pelo interceptor global
   } finally {
     loading.value = false
   }

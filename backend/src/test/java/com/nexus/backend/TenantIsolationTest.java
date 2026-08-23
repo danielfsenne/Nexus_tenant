@@ -53,8 +53,10 @@ class TenantIsolationTest {
 
     @Test
     void requisicaoSemTokenEhRejeitada() throws Exception {
+        // Sem token = não autenticado -> 401. 403 fica reservado para quando o
+        // usuário está autenticado mas não tem o papel necessário.
         mockMvc.perform(get("/customers"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     private String registrarEExtrairToken(String companyName, String email, String password) throws Exception {

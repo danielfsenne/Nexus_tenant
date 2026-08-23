@@ -32,9 +32,14 @@ function formatDateTime(value: string) {
 }
 
 onMounted(async () => {
-  const { data } = await http.get<AuditLog[]>('/audit-logs')
-  logs.value = data
-  loading.value = false
+  try {
+    const { data } = await http.get<AuditLog[]>('/audit-logs')
+    logs.value = data
+  } catch {
+    // erro de rede/autenticação já é tratado pelo interceptor global
+  } finally {
+    loading.value = false
+  }
 })
 </script>
 

@@ -25,9 +25,14 @@ const deleting = ref(false)
 
 async function loadProducts() {
   loading.value = true
-  const { data } = await http.get<Product[]>('/products')
-  products.value = data
-  loading.value = false
+  try {
+    const { data } = await http.get<Product[]>('/products')
+    products.value = data
+  } catch {
+    // erro de rede/autenticação já é tratado pelo interceptor global
+  } finally {
+    loading.value = false
+  }
 }
 
 async function handleSubmit() {

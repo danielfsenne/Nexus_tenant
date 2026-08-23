@@ -23,13 +23,18 @@ const successMessage = ref('')
 
 async function loadData() {
   loading.value = true
-  const [usersRes, invitesRes] = await Promise.all([
-    http.get<AppUser[]>('/users'),
-    http.get<Invite[]>('/invites'),
-  ])
-  users.value = usersRes.data
-  invites.value = invitesRes.data
-  loading.value = false
+  try {
+    const [usersRes, invitesRes] = await Promise.all([
+      http.get<AppUser[]>('/users'),
+      http.get<Invite[]>('/invites'),
+    ])
+    users.value = usersRes.data
+    invites.value = invitesRes.data
+  } catch {
+    // erro de rede/autenticação já é tratado pelo interceptor global
+  } finally {
+    loading.value = false
+  }
 }
 
 async function handleInvite() {

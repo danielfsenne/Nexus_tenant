@@ -28,13 +28,18 @@ const customerNameById = computed(() => {
 
 async function loadData() {
   loading.value = true
-  const [ordersRes, customersRes] = await Promise.all([
-    http.get<Order[]>('/orders'),
-    http.get<Customer[]>('/customers'),
-  ])
-  orders.value = ordersRes.data
-  customers.value = customersRes.data
-  loading.value = false
+  try {
+    const [ordersRes, customersRes] = await Promise.all([
+      http.get<Order[]>('/orders'),
+      http.get<Customer[]>('/customers'),
+    ])
+    orders.value = ordersRes.data
+    customers.value = customersRes.data
+  } catch {
+    // erro de rede/autenticação já é tratado pelo interceptor global
+  } finally {
+    loading.value = false
+  }
 }
 
 async function handleSubmit() {

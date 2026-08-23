@@ -25,9 +25,14 @@ const deleting = ref(false)
 
 async function loadCustomers() {
   loading.value = true
-  const { data } = await http.get<Customer[]>('/customers')
-  customers.value = data
-  loading.value = false
+  try {
+    const { data } = await http.get<Customer[]>('/customers')
+    customers.value = data
+  } catch {
+    // erro de rede/autenticação já é tratado pelo interceptor global
+  } finally {
+    loading.value = false
+  }
 }
 
 async function handleSubmit() {
