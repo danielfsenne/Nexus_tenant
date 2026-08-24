@@ -42,5 +42,47 @@ services:
       timeout: 5s
       retries: 5
 
+  backend:
+    build:
+      context: ./backend
+    container_name: nexus-backend
+    environment:
+      NEXUS_DB_HOST: postgres
+      NEXUS_DB_PORT: 5432
+      NEXUS_DB_NAME: nexus
+      NEXUS_DB_USER: nexus
+      NEXUS_DB_PASSWORD: nexus
+      NEXUS_REDIS_HOST: redis
+      NEXUS_REDIS_PORT: 6379
+      NEXUS_RABBITMQ_HOST: rabbitmq
+      NEXUS_RABBITMQ_PORT: 5672
+      NEXUS_RABBITMQ_USER: nexus
+      NEXUS_RABBITMQ_PASSWORD: nexus
+      NEXUS_JWT_SECRET: ${NEXUS_JWT_SECRET:?defina NEXUS_JWT_SECRET no .env}
+      NEXUS_FRONTEND_URL: ${NEXUS_FRONTEND_URL:-http://localhost:8082}
+      NEXUS_MAIL_ENABLED: ${NEXUS_MAIL_ENABLED:-false}
+      NEXUS_MAIL_USERNAME: ${NEXUS_MAIL_USERNAME:-}
+      NEXUS_MAIL_PASSWORD: ${NEXUS_MAIL_PASSWORD:-}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${NEXUS_API_URL:-http://localhost:8080}
+    container_name: nexus-frontend
+    ports:
+      - "8082:80"
+    depends_on:
+      - backend
+
 volumes:
   nexus_postgres_data:
