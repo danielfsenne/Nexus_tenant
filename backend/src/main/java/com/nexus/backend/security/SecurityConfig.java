@@ -54,6 +54,9 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/invites/accept").permitAll()
                         .requestMatchers("/ws/**").permitAll()
+                        // Só health/info/prometheus estão expostos (application.yml), e não
+                        // carregam dado de tenant nenhum — o Prometheus não manda JWT.
+                        .requestMatchers("/actuator/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

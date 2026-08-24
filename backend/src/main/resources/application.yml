@@ -50,6 +50,27 @@ spring:
 server:
   port: 8080
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  health:
+    mail:
+      # O health check de mail testa conectividade SMTP mesmo com
+      # nexus.mail.enabled=false, derrubando o health geral da app em
+      # ambientes sem credenciais de e-mail configuradas.
+      enabled: false
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
 nexus:
   jwt:
     secret: ${NEXUS_JWT_SECRET:troque-este-segredo-em-producao-1234567890}
