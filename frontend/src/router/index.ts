@@ -70,6 +70,11 @@ const router = createRouter({
           component: () => import('../views/AuditLogView.vue'),
           meta: { requiresAdmin: true },
         },
+        {
+          path: 'perfil',
+          name: 'profile',
+          component: () => import('../views/ProfileView.vue'),
+        },
       ],
     },
   ],
