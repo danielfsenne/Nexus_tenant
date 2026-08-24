@@ -1,6 +1,7 @@
 package com.nexus.backend.security;
 
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -24,10 +25,16 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final AuthRateLimitFilter authRateLimitFilter;
+    private final List<String> allowedOrigins;
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter, AuthRateLimitFilter authRateLimitFilter) {
+    public SecurityConfig(
+            JwtAuthFilter jwtAuthFilter,
+            AuthRateLimitFilter authRateLimitFilter,
+            @Value("${nexus.cors.allowed-origins}") List<String> allowedOrigins
+    ) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.authRateLimitFilter = authRateLimitFilter;
+        this.allowedOrigins = allowedOrigins;
     }
 
     @Bean
@@ -72,7 +79,7 @@ public class SecurityConfig {
 
     private CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
 

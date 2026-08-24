@@ -72,6 +72,10 @@ management:
         http.server.requests: true
 
 nexus:
+  cors:
+    # Origens do navegador que podem chamar a API: Vite dev server (5173) e o
+    # frontend servido pelo Nginx no docker-compose local (8082).
+    allowed-origins: ${NEXUS_CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:8082}
   jwt:
     secret: ${NEXUS_JWT_SECRET:troque-este-segredo-em-producao-1234567890}
     expiration-minutes: 60

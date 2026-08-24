@@ -1,12 +1,17 @@
 import { defineConfig, devices } from '@playwright/test'
 
+const isCI = !!process.env.CI
+// No CI, a stack inteira sobe via docker-compose (frontend servido pelo
+// Nginx em 8082); localmente, o Playwright sobe o servidor de dev do Vite.
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5173'
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
-  workers: process.env.CI ? 2 : 4,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
-  reporter: 'list',
+  workers: isCI ? 2 : 4,
+  forbidOnly: isCI,
+  retries: isCI ? 1 : 0,
+  reporter: isCI ? [['list'], ['html', { open: 'never' }]] : 'list',
   expect: {
     // Padrão (5s) é justo demais sob contenção de CPU com vários Chromium
     // rodando em paralelo; navegação após submit de formulário pode passar
@@ -14,7 +19,7 @@ export default defineConfig({
     timeout: 10_000,
   },
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL,
     trace: 'on-first-retry',
   },
   projects: [
@@ -23,10 +28,12 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 30_000,
-  },
+  webServer: isCI
+    ? undefined
+    : {
+        command: 'npm run dev',
+        url: baseURL,
+        reuseExistingServer: true,
+        timeout: 30_000,
+      },
 })
