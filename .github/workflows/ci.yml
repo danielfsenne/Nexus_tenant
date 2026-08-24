@@ -54,7 +54,7 @@ jobs:
       - name: Preparar .env para a stack
         run: |
           cat <<EOF > .env
-          NEXUS_JWT_SECRET=segredo-e2e-ci-${{ github.run_id }}
+          NEXUS_JWT_SECRET=$(openssl rand -hex 32)
           NEXUS_MAIL_ENABLED=false
           NEXUS_RATE_LIMIT_ENABLED=false
           NEXUS_FRONTEND_URL=http://localhost:8082
