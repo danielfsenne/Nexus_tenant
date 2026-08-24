@@ -79,7 +79,7 @@ nexus:
   invite-expiration-days: 7
   password-reset-expiration-hours: 2
   rate-limit:
-    enabled: true
+    enabled: ${NEXUS_RATE_LIMIT_ENABLED:true}
     auth-max-attempts: 10
     auth-window-seconds: 60
   order-processing:
