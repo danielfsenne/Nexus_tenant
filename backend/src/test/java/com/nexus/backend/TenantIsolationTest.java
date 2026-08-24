@@ -3,9 +3,6 @@ package com.nexus.backend;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Map;
@@ -13,10 +10,7 @@ import java.util.Map;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-class TenantIsolationTest {
+class TenantIsolationTest extends AbstractIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -57,6 +51,31 @@ class TenantIsolationTest {
         // Sem token = não autenticado -> 401. 403 fica reservado para quando o
         // usuário está autenticado mas não tem o papel necessário.
         mockMvc.perform(get("/customers"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void mesmoEmailEmDuasEmpresasLogaNaEmpresaMaisAntiga() throws Exception {
+        // O e-mail é único por tenant, não globalmente: a mesma pessoa pode ser
+        // admin em várias empresas com senhas diferentes em cada uma. O login
+        // autentica contra a conta mais antiga (menor id) com aquele e-mail —
+        // isso é o comportamento documentado, não um bug (ver findFirstByEmailOrderByIdAsc).
+        registrarEExtrairToken("Empresa Antiga", "duplicado@exemplo.com", "senhaAntiga1");
+        registrarEExtrairToken("Empresa Nova", "duplicado@exemplo.com", "senhaNova123");
+
+        var loginAntigo = Map.of("email", "duplicado@exemplo.com", "password", "senhaAntiga1");
+        mockMvc.perform(post("/auth/login")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(loginAntigo)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").exists());
+
+        // A senha da empresa nova não autentica, porque o login sempre resolve
+        // para a conta mais antiga com esse e-mail.
+        var loginNovo = Map.of("email", "duplicado@exemplo.com", "password", "senhaNova123");
+        mockMvc.perform(post("/auth/login")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(loginNovo)))
                 .andExpect(status().isUnauthorized());
     }
 
