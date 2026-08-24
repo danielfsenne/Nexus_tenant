@@ -45,6 +45,9 @@ public class SecurityConfig {
                         // Sem isso, o Spring Security responde 403 (em vez de 401) quando o
                         // token está ausente/expirado/inválido, e o front só desloga no 401.
                         (request, response, authException) -> {
+                            // setCharacterEncoding precisa vir antes de getWriter(), senão o
+                            // servlet usa ISO-8859-1 por padrão e corrompe os acentos.
+                            response.setCharacterEncoding("UTF-8");
                             response.setContentType("application/json");
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.getWriter().write("{\"message\":\"Sessão expirada. Faça login novamente.\"}");
@@ -57,6 +60,8 @@ public class SecurityConfig {
                         // Só health/info/prometheus estão expostos (application.yml), e não
                         // carregam dado de tenant nenhum — o Prometheus não manda JWT.
                         .requestMatchers("/actuator/**").permitAll()
+                        // Documentação da API — não expõe dado de tenant, só o contrato.
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

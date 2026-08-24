@@ -60,6 +60,7 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
 
         if (attempts != null && attempts > maxAttempts) {
             response.setStatus(429);
+            response.setCharacterEncoding("UTF-8");
             response.setContentType("application/json");
             response.getWriter().write("{\"message\":\"Muitas tentativas. Tente novamente em instantes.\"}");
             return;
