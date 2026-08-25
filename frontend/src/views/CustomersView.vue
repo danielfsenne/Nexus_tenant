@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import http, { extractErrorMessage } from '../lib/http'
 import { useToastStore } from '../stores/toast'
 import type { Customer, PageResponse } from '../types'
@@ -20,6 +20,7 @@ const page = ref(0)
 const totalPages = ref(0)
 const totalElements = ref(0)
 const loading = ref(true)
+const search = ref('')
 
 const name = ref('')
 const email = ref('')
@@ -33,7 +34,9 @@ const deleting = ref(false)
 async function loadCustomers() {
   loading.value = true
   try {
-    const { data } = await http.get<PageResponse<Customer>>('/customers', { params: { page: page.value, size: 10 } })
+    const { data } = await http.get<PageResponse<Customer>>('/customers', {
+      params: { page: page.value, size: 10, search: search.value || undefined },
+    })
     customers.value = data.content
     totalPages.value = data.totalPages
     totalElements.value = data.totalElements
@@ -53,6 +56,15 @@ function changePage(newPage: number) {
   page.value = newPage
   loadCustomers()
 }
+
+let searchDebounce: ReturnType<typeof setTimeout> | undefined
+watch(search, () => {
+  clearTimeout(searchDebounce)
+  searchDebounce = setTimeout(() => {
+    page.value = 0
+    loadCustomers()
+  }, 300)
+})
 
 async function handleSubmit() {
   saving.value = true
@@ -133,6 +145,10 @@ onMounted(loadCustomers)
       </form>
     </BaseCard>
 
+    <div class="mb-4 max-w-xs">
+      <BaseInput v-model="search" placeholder="Buscar por nome ou e-mail..." />
+    </div>
+
     <Spinner v-if="loading" />
 
     <BaseCard v-else class="overflow-hidden">
@@ -164,7 +180,10 @@ onMounted(loadCustomers)
         </tbody>
       </table>
 
-      <EmptyState v-if="customers.length === 0" message="Nenhum cliente cadastrado." />
+      <EmptyState
+        v-if="customers.length === 0"
+        :message="search ? 'Nenhum cliente encontrado para essa busca.' : 'Nenhum cliente cadastrado.'"
+      />
 
       <Pagination :page="page" :total-pages="totalPages" :total-elements="totalElements" @update:page="changePage" />
     </BaseCard>

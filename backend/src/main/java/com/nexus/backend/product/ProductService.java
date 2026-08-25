@@ -27,9 +27,12 @@ public class ProductService {
         this.auditService = auditService;
     }
 
-    public PageResponse<ProductResponse> findAll(int page, int size) {
+    public PageResponse<ProductResponse> findAll(int page, int size, String search) {
         var pageable = PageRequest.of(page, size, Sort.by("id").descending());
-        var result = productRepository.findAllByTenantId(TenantContext.get(), pageable);
+        var tenantId = TenantContext.get();
+        var result = (search == null || search.isBlank())
+                ? productRepository.findAllByTenantId(tenantId, pageable)
+                : productRepository.findAllByTenantIdAndNameContainingIgnoreCase(tenantId, search.trim(), pageable);
         return PageResponse.from(result, ProductResponse::from);
     }
 

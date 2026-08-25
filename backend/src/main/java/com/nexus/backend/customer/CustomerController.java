@@ -19,9 +19,10 @@ public class CustomerController {
     @GetMapping
     public PageResponse<CustomerResponse> findAll(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search
     ) {
-        return customerService.findAll(page, Math.min(size, 200));
+        return customerService.findAll(page, Math.min(size, 200), search);
     }
 
     @GetMapping("/{id}")

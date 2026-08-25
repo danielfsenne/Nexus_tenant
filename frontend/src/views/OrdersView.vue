@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import http, { extractErrorMessage } from '../lib/http'
 import { useToastStore } from '../stores/toast'
 import type { Order, Customer, PageResponse } from '../types'
@@ -27,6 +27,8 @@ const total = ref<number | null>(null)
 const saving = ref(false)
 const errorMessage = ref('')
 
+const filterCustomerId = ref<number | null>(null)
+
 const customerNameById = computed(() => {
   const map = new Map<number, string>()
   customers.value.forEach((c) => map.set(c.id, c.name))
@@ -37,7 +39,9 @@ async function loadData() {
   loading.value = true
   try {
     const [ordersRes, customersRes] = await Promise.all([
-      http.get<PageResponse<Order>>('/orders', { params: { page: page.value, size: 10 } }),
+      http.get<PageResponse<Order>>('/orders', {
+        params: { page: page.value, size: 10, customerId: filterCustomerId.value || undefined },
+      }),
       http.get<PageResponse<Customer>>('/customers', { params: { page: 0, size: 200 } }),
     ])
     orders.value = ordersRes.data.content
@@ -60,6 +64,11 @@ function changePage(newPage: number) {
   page.value = newPage
   loadData()
 }
+
+watch(filterCustomerId, () => {
+  page.value = 0
+  loadData()
+})
 
 async function handleSubmit() {
   saving.value = true
@@ -109,6 +118,15 @@ onMounted(loadData)
         <Alert v-if="errorMessage" variant="error" class="w-full">{{ errorMessage }}</Alert>
       </form>
     </BaseCard>
+
+    <div class="mb-4 max-w-xs">
+      <BaseSelect v-model="filterCustomerId">
+        <option :value="null">Todos os clientes</option>
+        <option v-for="customer in customers" :key="customer.id" :value="customer.id">
+          {{ customer.name }}
+        </option>
+      </BaseSelect>
+    </div>
 
     <Spinner v-if="loading" />
 

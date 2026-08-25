@@ -19,9 +19,10 @@ public class ProductController {
     @GetMapping
     public PageResponse<ProductResponse> findAll(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search
     ) {
-        return productService.findAll(page, Math.min(size, 200));
+        return productService.findAll(page, Math.min(size, 200), search);
     }
 
     @GetMapping("/{id}")

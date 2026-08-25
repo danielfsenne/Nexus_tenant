@@ -1,6 +1,7 @@
 package com.nexus.backend.audit;
 
 import com.nexus.backend.common.PageResponse;
+import com.nexus.backend.domain.AuditAction;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,8 +22,9 @@ public class AuditController {
     @PreAuthorize("hasRole('ADMIN')")
     public PageResponse<AuditLogResponse> findAll(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) AuditAction action
     ) {
-        return auditService.findAll(page, Math.min(size, 100));
+        return auditService.findAll(page, Math.min(size, 100), action);
     }
 }

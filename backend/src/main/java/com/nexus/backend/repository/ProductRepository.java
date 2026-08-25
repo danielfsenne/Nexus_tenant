@@ -11,6 +11,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     Page<Product> findAllByTenantId(Long tenantId, Pageable pageable);
 
+    Page<Product> findAllByTenantIdAndNameContainingIgnoreCase(Long tenantId, String name, Pageable pageable);
+
     Optional<Product> findByIdAndTenantId(Long id, Long tenantId);
 
     long countByTenantId(Long tenantId);

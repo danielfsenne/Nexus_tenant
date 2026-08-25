@@ -18,9 +18,12 @@ public class AuditService {
         this.auditLogRepository = auditLogRepository;
     }
 
-    public PageResponse<AuditLogResponse> findAll(int page, int size) {
+    public PageResponse<AuditLogResponse> findAll(int page, int size, AuditAction action) {
         var pageable = PageRequest.of(page, size);
-        var result = auditLogRepository.findAllByTenantIdOrderByCreatedAtDesc(TenantContext.get(), pageable);
+        var tenantId = TenantContext.get();
+        var result = (action == null)
+                ? auditLogRepository.findAllByTenantIdOrderByCreatedAtDesc(tenantId, pageable)
+                : auditLogRepository.findAllByTenantIdAndActionOrderByCreatedAtDesc(tenantId, action, pageable);
         return PageResponse.from(result, AuditLogResponse::from);
     }
 

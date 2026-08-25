@@ -66,4 +66,25 @@ test.describe('CRUD de clientes', () => {
   test('lista vazia mostra a mensagem de nenhum cliente', async ({ page }) => {
     await expect(page.getByText('Nenhum cliente cadastrado.')).toBeVisible()
   })
+
+  test('busca filtra a lista pelo nome', async ({ page }) => {
+    const alvo = `Encontrável ${Date.now()}`
+    const outro = `Outro Cliente ${Date.now()}`
+
+    await page.getByLabel('Nome').fill(alvo)
+    await page.getByRole('button', { name: 'Adicionar' }).click()
+    await expect(page.locator('tr', { hasText: alvo })).toBeVisible()
+
+    await page.getByLabel('Nome').fill(outro)
+    await page.getByRole('button', { name: 'Adicionar' }).click()
+    await expect(page.locator('tr', { hasText: outro })).toBeVisible()
+
+    await page.getByPlaceholder('Buscar por nome ou e-mail...').fill('Encontrável')
+
+    await expect(page.locator('tr', { hasText: alvo })).toBeVisible()
+    await expect(page.locator('tr', { hasText: outro })).toHaveCount(0)
+
+    await page.getByPlaceholder('Buscar por nome ou e-mail...').fill('não existe nenhum cliente assim')
+    await expect(page.getByText('Nenhum cliente encontrado para essa busca.')).toBeVisible()
+  })
 })

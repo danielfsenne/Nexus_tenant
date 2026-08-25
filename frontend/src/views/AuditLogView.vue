@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import http from '../lib/http'
 import type { AuditLog, PageResponse } from '../types'
 import PageHeader from '../components/ui/PageHeader.vue'
 import BaseCard from '../components/ui/BaseCard.vue'
+import BaseSelect from '../components/ui/BaseSelect.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import Spinner from '../components/ui/Spinner.vue'
 import Pagination from '../components/ui/Pagination.vue'
@@ -13,6 +14,7 @@ const page = ref(0)
 const totalPages = ref(0)
 const totalElements = ref(0)
 const loading = ref(true)
+const filterAction = ref<AuditLog['action'] | ''>('')
 
 const actionLabels: Record<AuditLog['action'], string> = {
   CREATED: 'Criou',
@@ -38,7 +40,9 @@ function formatDateTime(value: string) {
 async function loadLogs() {
   loading.value = true
   try {
-    const { data } = await http.get<PageResponse<AuditLog>>('/audit-logs', { params: { page: page.value, size: 20 } })
+    const { data } = await http.get<PageResponse<AuditLog>>('/audit-logs', {
+      params: { page: page.value, size: 20, action: filterAction.value || undefined },
+    })
     logs.value = data.content
     totalPages.value = data.totalPages
     totalElements.value = data.totalElements
@@ -54,12 +58,24 @@ function changePage(newPage: number) {
   loadLogs()
 }
 
+watch(filterAction, () => {
+  page.value = 0
+  loadLogs()
+})
+
 onMounted(loadLogs)
 </script>
 
 <template>
   <div>
     <PageHeader title="Auditoria" />
+
+    <div class="mb-4 max-w-xs">
+      <BaseSelect v-model="filterAction">
+        <option value="">Todas as ações</option>
+        <option v-for="(label, action) in actionLabels" :key="action" :value="action">{{ label }}</option>
+      </BaseSelect>
+    </div>
 
     <Spinner v-if="loading" />
 
@@ -91,7 +107,10 @@ onMounted(loadLogs)
         </tbody>
       </table>
 
-      <EmptyState v-if="logs.length === 0" message="Nenhum evento registrado ainda." />
+      <EmptyState
+        v-if="logs.length === 0"
+        :message="filterAction ? 'Nenhum evento encontrado para esse filtro.' : 'Nenhum evento registrado ainda.'"
+      />
 
       <Pagination :page="page" :total-pages="totalPages" :total-elements="totalElements" @update:page="changePage" />
     </BaseCard>

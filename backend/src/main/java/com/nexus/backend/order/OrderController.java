@@ -19,9 +19,10 @@ public class OrderController {
     @GetMapping
     public PageResponse<OrderResponse> findAll(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Long customerId
     ) {
-        return orderService.findAll(page, Math.min(size, 200));
+        return orderService.findAll(page, Math.min(size, 200), customerId);
     }
 
     @GetMapping("/{id}")

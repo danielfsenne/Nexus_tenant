@@ -41,9 +41,12 @@ public class OrderService {
         this.orderProcessingProducer = orderProcessingProducer;
     }
 
-    public PageResponse<OrderResponse> findAll(int page, int size) {
+    public PageResponse<OrderResponse> findAll(int page, int size, Long customerId) {
         var pageable = PageRequest.of(page, size, Sort.by("id").descending());
-        var result = orderRepository.findAllByTenantId(TenantContext.get(), pageable);
+        var tenantId = TenantContext.get();
+        var result = (customerId == null)
+                ? orderRepository.findAllByTenantId(tenantId, pageable)
+                : orderRepository.findAllByTenantIdAndCustomerId(tenantId, customerId, pageable);
         return PageResponse.from(result, OrderResponse::from);
     }
 

@@ -27,9 +27,12 @@ public class CustomerService {
         this.auditService = auditService;
     }
 
-    public PageResponse<CustomerResponse> findAll(int page, int size) {
+    public PageResponse<CustomerResponse> findAll(int page, int size, String search) {
         var pageable = PageRequest.of(page, size, Sort.by("id").descending());
-        var result = customerRepository.findAllByTenantId(TenantContext.get(), pageable);
+        var tenantId = TenantContext.get();
+        var result = (search == null || search.isBlank())
+                ? customerRepository.findAllByTenantId(tenantId, pageable)
+                : customerRepository.search(tenantId, search.trim(), pageable);
         return PageResponse.from(result, CustomerResponse::from);
     }
 
