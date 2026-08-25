@@ -71,6 +71,7 @@ public class InviteService {
         this.inviteExpirationDays = inviteExpirationDays;
     }
 
+    @Transactional
     public InviteResponse create(InviteRequest request) {
         Long tenantId = TenantContext.get();
 
@@ -81,7 +82,7 @@ public class InviteService {
             throw new ConflictException("Já existe um convite pendente para este e-mail.");
         }
 
-        planLimitService.assertCanCreateUser(tenantId, userRepository.countByTenantId(tenantId));
+        planLimitService.assertCanCreateUser(tenantId, () -> userRepository.countByTenantId(tenantId));
 
         Invite invite = inviteRepository.save(
                 Invite.builder()
@@ -130,7 +131,7 @@ public class InviteService {
             throw new ConflictException("Este convite expirou.");
         }
 
-        planLimitService.assertCanCreateUser(invite.getTenantId(), userRepository.countByTenantId(invite.getTenantId()));
+        planLimitService.assertCanCreateUser(invite.getTenantId(), () -> userRepository.countByTenantId(invite.getTenantId()));
 
         User user = userRepository.save(
                 User.builder()

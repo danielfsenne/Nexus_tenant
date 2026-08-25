@@ -12,6 +12,7 @@ import com.nexus.backend.security.TenantContext;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 
@@ -58,9 +59,10 @@ public class CustomerService {
         return CustomerResponse.from(findOwnedByTenant(id));
     }
 
+    @Transactional
     public CustomerResponse create(CustomerRequest request) {
         Long tenantId = TenantContext.get();
-        planLimitService.assertCanCreateCustomer(tenantId, customerRepository.countByTenantId(tenantId));
+        planLimitService.assertCanCreateCustomer(tenantId, () -> customerRepository.countByTenantId(tenantId));
 
         Customer customer = Customer.builder()
                 .name(request.name())

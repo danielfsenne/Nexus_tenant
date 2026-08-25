@@ -12,6 +12,7 @@ import com.nexus.backend.security.TenantContext;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 
@@ -58,9 +59,10 @@ public class ProductService {
         return ProductResponse.from(findOwnedByTenant(id));
     }
 
+    @Transactional
     public ProductResponse create(ProductRequest request) {
         Long tenantId = TenantContext.get();
-        planLimitService.assertCanCreateProduct(tenantId, productRepository.countByTenantId(tenantId));
+        planLimitService.assertCanCreateProduct(tenantId, () -> productRepository.countByTenantId(tenantId));
 
         Product product = Product.builder()
                 .name(request.name())
