@@ -1,6 +1,7 @@
 package com.nexus.backend.customer;
 
 import com.nexus.backend.audit.AuditService;
+import com.nexus.backend.common.CsvUtil;
 import com.nexus.backend.common.PageResponse;
 import com.nexus.backend.common.PlanLimitService;
 import com.nexus.backend.common.ResourceNotFoundException;
@@ -11,6 +12,8 @@ import com.nexus.backend.security.TenantContext;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+
+import java.nio.charset.StandardCharsets;
 
 @Service
 public class CustomerService {
@@ -34,6 +37,21 @@ public class CustomerService {
                 ? customerRepository.findAllByTenantId(tenantId, pageable)
                 : customerRepository.search(tenantId, search.trim(), pageable);
         return PageResponse.from(result, CustomerResponse::from);
+    }
+
+    public byte[] exportCsv(String search) {
+        var pageable = PageRequest.of(0, Integer.MAX_VALUE, Sort.by("id").descending());
+        var tenantId = TenantContext.get();
+        var result = (search == null || search.isBlank())
+                ? customerRepository.findAllByTenantId(tenantId, pageable)
+                : customerRepository.search(tenantId, search.trim(), pageable);
+
+        StringBuilder csv = new StringBuilder("﻿");
+        csv.append(CsvUtil.row("Nome", "E-mail", "Criado em"));
+        for (Customer customer : result.getContent()) {
+            csv.append(CsvUtil.row(customer.getName(), customer.getEmail(), customer.getCreatedAt()));
+        }
+        return csv.toString().getBytes(StandardCharsets.UTF_8);
     }
 
     public CustomerResponse findById(Long id) {

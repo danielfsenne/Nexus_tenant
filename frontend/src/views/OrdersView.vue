@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, computed, watch } from 'vue'
 import http, { extractErrorMessage } from '../lib/http'
+import { downloadCsv } from '../lib/download'
 import { useToastStore } from '../stores/toast'
 import type { Order, Customer, PageResponse } from '../types'
 import PageHeader from '../components/ui/PageHeader.vue'
@@ -28,6 +29,7 @@ const saving = ref(false)
 const errorMessage = ref('')
 
 const filterCustomerId = ref<number | null>(null)
+const exporting = ref(false)
 
 const customerNameById = computed(() => {
   const map = new Map<number, string>()
@@ -70,6 +72,17 @@ watch(filterCustomerId, () => {
   loadData()
 })
 
+async function exportCsv() {
+  exporting.value = true
+  try {
+    await downloadCsv('/orders/export', { customerId: filterCustomerId.value || undefined }, 'vendas.csv')
+  } catch {
+    toast.error('Não foi possível exportar as vendas.')
+  } finally {
+    exporting.value = false
+  }
+}
+
 async function handleSubmit() {
   saving.value = true
   errorMessage.value = ''
@@ -96,7 +109,11 @@ onMounted(loadData)
 
 <template>
   <div>
-    <PageHeader title="Vendas" />
+    <PageHeader title="Vendas">
+      <template #actions>
+        <BaseButton variant="secondary" :loading="exporting" @click="exportCsv">Exportar CSV</BaseButton>
+      </template>
+    </PageHeader>
 
     <BaseCard class="mb-6 p-4">
       <form class="flex flex-wrap items-end gap-3" @submit.prevent="handleSubmit">

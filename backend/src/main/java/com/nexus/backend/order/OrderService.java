@@ -1,6 +1,7 @@
 package com.nexus.backend.order;
 
 import com.nexus.backend.audit.AuditService;
+import com.nexus.backend.common.CsvUtil;
 import com.nexus.backend.common.PageResponse;
 import com.nexus.backend.common.ResourceNotFoundException;
 import com.nexus.backend.domain.AuditAction;
@@ -15,6 +16,10 @@ import com.nexus.backend.websocket.NotificationService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
@@ -48,6 +53,25 @@ public class OrderService {
                 ? orderRepository.findAllByTenantId(tenantId, pageable)
                 : orderRepository.findAllByTenantIdAndCustomerId(tenantId, customerId, pageable);
         return PageResponse.from(result, OrderResponse::from);
+    }
+
+    public byte[] exportCsv(Long customerId) {
+        var pageable = PageRequest.of(0, Integer.MAX_VALUE, Sort.by("id").descending());
+        var tenantId = TenantContext.get();
+        var result = (customerId == null)
+                ? orderRepository.findAllByTenantId(tenantId, pageable)
+                : orderRepository.findAllByTenantIdAndCustomerId(tenantId, customerId, pageable);
+
+        Map<Long, String> customerNameById = customerRepository.findAllByTenantId(tenantId, pageable).getContent().stream()
+                .collect(Collectors.toMap(Customer::getId, Customer::getName));
+
+        StringBuilder csv = new StringBuilder("﻿");
+        csv.append(CsvUtil.row("Cliente", "Total", "Criado em"));
+        for (Order order : result.getContent()) {
+            String customerName = customerNameById.getOrDefault(order.getCustomerId(), "#" + order.getCustomerId());
+            csv.append(CsvUtil.row(customerName, order.getTotal(), order.getCreatedAt()));
+        }
+        return csv.toString().getBytes(StandardCharsets.UTF_8);
     }
 
     public OrderResponse findById(Long id) {

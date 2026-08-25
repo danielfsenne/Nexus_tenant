@@ -2,6 +2,9 @@ package com.nexus.backend.customer;
 
 import com.nexus.backend.common.PageResponse;
 import jakarta.validation.Valid;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +26,16 @@ public class CustomerController {
             @RequestParam(required = false) String search
     ) {
         return customerService.findAll(page, Math.min(size, 200), search);
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(@RequestParam(required = false) String search) {
+        byte[] csv = customerService.exportCsv(search);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename("clientes.csv").build().toString())
+                .body(csv);
     }
 
     @GetMapping("/{id}")

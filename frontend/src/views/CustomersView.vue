@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import http, { extractErrorMessage } from '../lib/http'
+import { downloadCsv } from '../lib/download'
 import { useToastStore } from '../stores/toast'
 import type { Customer, PageResponse } from '../types'
 import PageHeader from '../components/ui/PageHeader.vue'
@@ -30,6 +31,7 @@ const errorMessage = ref('')
 
 const deleteTarget = ref<Customer | null>(null)
 const deleting = ref(false)
+const exporting = ref(false)
 
 async function loadCustomers() {
   loading.value = true
@@ -55,6 +57,17 @@ async function loadCustomers() {
 function changePage(newPage: number) {
   page.value = newPage
   loadCustomers()
+}
+
+async function exportCsv() {
+  exporting.value = true
+  try {
+    await downloadCsv('/customers/export', { search: search.value || undefined }, 'clientes.csv')
+  } catch {
+    toast.error('Não foi possível exportar os clientes.')
+  } finally {
+    exporting.value = false
+  }
 }
 
 let searchDebounce: ReturnType<typeof setTimeout> | undefined
@@ -122,7 +135,11 @@ onMounted(loadCustomers)
 
 <template>
   <div>
-    <PageHeader title="Clientes" />
+    <PageHeader title="Clientes">
+      <template #actions>
+        <BaseButton variant="secondary" :loading="exporting" @click="exportCsv">Exportar CSV</BaseButton>
+      </template>
+    </PageHeader>
 
     <BaseCard class="mb-6 p-4">
       <form class="flex flex-wrap items-end gap-3" @submit.prevent="handleSubmit">
