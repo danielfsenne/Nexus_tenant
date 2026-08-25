@@ -35,6 +35,14 @@ const router = createRouter({
       meta: { public: true },
     },
     {
+      path: '/verificar-email',
+      name: 'verify-email',
+      component: () => import('../views/VerifyEmailView.vue'),
+      // Também acessível logado: quem se registra já entra autenticado e
+      // pode abrir o link de verificação na mesma sessão do navegador.
+      meta: { public: true, alwaysAccessible: true },
+    },
+    {
       path: '/',
       component: () => import('../layouts/DefaultLayout.vue'),
       children: [
@@ -87,7 +95,7 @@ router.beforeEach((to) => {
     return { name: 'login' }
   }
 
-  if (to.meta.public && auth.isAuthenticated) {
+  if (to.meta.public && auth.isAuthenticated && !to.meta.alwaysAccessible) {
     return { name: 'dashboard' }
   }
 

@@ -140,6 +140,9 @@ public class InviteService {
                         .password(passwordEncoder.encode(request.password()))
                         .role(invite.getRole())
                         .tenantId(invite.getTenantId())
+                        // Quem aceita o convite já provou controlar o e-mail ao abrir o
+                        // link recebido nele, então não precisa verificar de novo.
+                        .emailVerified(true)
                         .build()
         );
 

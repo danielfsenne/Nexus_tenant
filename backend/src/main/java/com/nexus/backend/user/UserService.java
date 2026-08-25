@@ -1,5 +1,7 @@
 package com.nexus.backend.user;
 
+import com.nexus.backend.auth.AuthService;
+import com.nexus.backend.common.ConflictException;
 import com.nexus.backend.common.ResourceNotFoundException;
 import com.nexus.backend.domain.User;
 import com.nexus.backend.repository.UserRepository;
@@ -16,10 +18,12 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuthService authService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthService authService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.authService = authService;
     }
 
     public List<UserResponse> findAll() {
@@ -45,6 +49,14 @@ public class UserService {
         }
         user.setPassword(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
+    }
+
+    public void resendVerification() {
+        User user = currentUser();
+        if (user.isEmailVerified()) {
+            throw new ConflictException("Este e-mail já foi verificado.");
+        }
+        authService.sendVerificationEmail(user);
     }
 
     private User currentUser() {

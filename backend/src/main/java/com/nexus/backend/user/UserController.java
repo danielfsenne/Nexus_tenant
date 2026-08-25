@@ -38,4 +38,10 @@ public class UserController {
         userService.changePassword(request);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/me/resend-verification")
+    public ResponseEntity<Void> resendVerification() {
+        userService.resendVerification();
+        return ResponseEntity.ok().build();
+    }
 }

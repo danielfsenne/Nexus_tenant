@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import http from '../lib/http'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
+import { useToastStore } from '../stores/toast'
+import type { AppUser } from '../types'
 import NotificationBell from '../components/NotificationBell.vue'
 import ThemeToggle from '../components/ThemeToggle.vue'
 
@@ -10,9 +13,37 @@ const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const notifications = useNotificationsStore()
+const toast = useToastStore()
 
-onMounted(() => notifications.connect())
+const emailVerified = ref<boolean | null>(null)
+const resendingVerification = ref(false)
+
+onMounted(() => {
+  notifications.connect()
+  loadVerificationStatus()
+})
 onUnmounted(() => notifications.disconnect())
+
+async function loadVerificationStatus() {
+  try {
+    const { data } = await http.get<AppUser>('/users/me')
+    emailVerified.value = data.emailVerified
+  } catch {
+    // erro de rede/autenticação já é tratado pelo interceptor global
+  }
+}
+
+async function resendVerification() {
+  resendingVerification.value = true
+  try {
+    await http.post('/users/me/resend-verification')
+    toast.success('E-mail de verificação reenviado.')
+  } catch {
+    toast.error('Não foi possível reenviar o e-mail de verificação.')
+  } finally {
+    resendingVerification.value = false
+  }
+}
 
 const icons: Record<string, string> = {
   dashboard: 'M3 12l2-2m0 0 7-7 7 7M5 10v10a1 1 0 0 0 1 1h3m10-11 2 2m-2-2v10a1 1 0 0 1-1 1h-3m-6 0a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1m-6 0h6',
@@ -174,6 +205,20 @@ function handleLogout() {
           <NotificationBell />
         </div>
       </header>
+
+      <div
+        v-if="emailVerified === false"
+        class="flex flex-wrap items-center justify-center gap-3 border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300"
+      >
+        <span>Confirme seu e-mail para garantir o acesso total à sua conta.</span>
+        <button
+          class="font-semibold underline underline-offset-2 hover:no-underline disabled:opacity-60"
+          :disabled="resendingVerification"
+          @click="resendVerification"
+        >
+          {{ resendingVerification ? 'Enviando...' : 'Reenviar e-mail' }}
+        </button>
+      </div>
 
       <main class="flex-1 p-6 lg:p-8">
         <div class="mx-auto max-w-6xl">

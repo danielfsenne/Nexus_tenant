@@ -46,6 +46,10 @@ public class User implements UserDetails {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "email_verified", nullable = false)
+    @Builder.Default
+    private boolean emailVerified = false;
+
     @PrePersist
     void onCreate() {
         if (createdAt == null) {

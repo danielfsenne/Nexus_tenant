@@ -2,12 +2,14 @@ package com.nexus.backend.auth;
 
 import com.nexus.backend.common.ConflictException;
 import com.nexus.backend.common.ResourceNotFoundException;
+import com.nexus.backend.domain.EmailVerificationToken;
 import com.nexus.backend.domain.PasswordResetToken;
 import com.nexus.backend.domain.Plan;
 import com.nexus.backend.domain.Role;
 import com.nexus.backend.domain.Tenant;
 import com.nexus.backend.domain.User;
 import com.nexus.backend.mail.MailService;
+import com.nexus.backend.repository.EmailVerificationTokenRepository;
 import com.nexus.backend.repository.PasswordResetTokenRepository;
 import com.nexus.backend.repository.TenantRepository;
 import com.nexus.backend.repository.UserRepository;
@@ -32,30 +34,36 @@ public class AuthService {
     private final TenantRepository tenantRepository;
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final MailService mailService;
     private final String frontendUrl;
     private final long passwordResetExpirationHours;
+    private final long emailVerificationExpirationHours;
 
     public AuthService(
             TenantRepository tenantRepository,
             UserRepository userRepository,
             PasswordResetTokenRepository passwordResetTokenRepository,
+            EmailVerificationTokenRepository emailVerificationTokenRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             MailService mailService,
             @Value("${nexus.frontend-url}") String frontendUrl,
-            @Value("${nexus.password-reset-expiration-hours}") long passwordResetExpirationHours
+            @Value("${nexus.password-reset-expiration-hours}") long passwordResetExpirationHours,
+            @Value("${nexus.email-verification-expiration-hours}") long emailVerificationExpirationHours
     ) {
         this.tenantRepository = tenantRepository;
         this.userRepository = userRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.emailVerificationTokenRepository = emailVerificationTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.mailService = mailService;
         this.frontendUrl = frontendUrl;
         this.passwordResetExpirationHours = passwordResetExpirationHours;
+        this.emailVerificationExpirationHours = emailVerificationExpirationHours;
     }
 
     @Transactional
@@ -77,8 +85,53 @@ public class AuthService {
                         .build()
         );
 
+        sendVerificationEmail(admin);
+
         String token = jwtService.generateToken(admin);
         return new AuthResponse(token, tenant.getId(), admin.getRole().name());
+    }
+
+    public void sendVerificationEmail(User user) {
+        EmailVerificationToken verificationToken = emailVerificationTokenRepository.save(
+                EmailVerificationToken.builder()
+                        .userId(user.getId())
+                        .token(UUID.randomUUID().toString())
+                        .expiresAt(Instant.now().plusSeconds(emailVerificationExpirationHours * 60 * 60))
+                        .build()
+        );
+
+        String verifyLink = frontendUrl + "/verificar-email?token=" + verificationToken.getToken();
+        log.info("Verificação de e-mail solicitada para {}. Link: {}", user.getEmail(), verifyLink);
+
+        mailService.send(
+                user.getEmail(),
+                "Confirme seu e-mail - Nexus",
+                "Falta pouco para começar a usar o Nexus.\n\n"
+                        + "Clique no link abaixo para confirmar seu e-mail:\n" + verifyLink + "\n\n"
+                        + "Este link expira em " + emailVerificationExpirationHours + " horas."
+        );
+    }
+
+    @Transactional
+    public void verifyEmail(VerifyEmailRequest request) {
+        EmailVerificationToken verificationToken = emailVerificationTokenRepository.findByToken(request.token())
+                .orElseThrow(() -> new ResourceNotFoundException("Token de verificação inválido"));
+
+        if (verificationToken.isUsed()) {
+            throw new ConflictException("Este link de verificação já foi utilizado.");
+        }
+        if (verificationToken.isExpired()) {
+            throw new ConflictException("Este link de verificação expirou.");
+        }
+
+        User user = userRepository.findById(verificationToken.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
+
+        user.setEmailVerified(true);
+        userRepository.save(user);
+
+        verificationToken.setUsedAt(Instant.now());
+        emailVerificationTokenRepository.save(verificationToken);
     }
 
     public AuthResponse login(LoginRequest request) {

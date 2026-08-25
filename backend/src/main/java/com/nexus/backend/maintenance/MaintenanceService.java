@@ -1,5 +1,6 @@
 package com.nexus.backend.maintenance;
 
+import com.nexus.backend.repository.EmailVerificationTokenRepository;
 import com.nexus.backend.repository.InviteRepository;
 import com.nexus.backend.repository.PasswordResetTokenRepository;
 import org.slf4j.Logger;
@@ -11,8 +12,8 @@ import java.time.Instant;
 
 /**
  * Limpeza de dados operacionais expirados. É uma manutenção global (não
- * escopada por tenant) — convites e tokens de reset são efêmeros por natureza
- * e não carregam dado de negócio sensível entre empresas.
+ * escopada por tenant) — convites e tokens são efêmeros por natureza e não
+ * carregam dado de negócio sensível entre empresas.
  */
 @Service
 public class MaintenanceService {
@@ -21,10 +22,16 @@ public class MaintenanceService {
 
     private final InviteRepository inviteRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
 
-    public MaintenanceService(InviteRepository inviteRepository, PasswordResetTokenRepository passwordResetTokenRepository) {
+    public MaintenanceService(
+            InviteRepository inviteRepository,
+            PasswordResetTokenRepository passwordResetTokenRepository,
+            EmailVerificationTokenRepository emailVerificationTokenRepository
+    ) {
         this.inviteRepository = inviteRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.emailVerificationTokenRepository = emailVerificationTokenRepository;
     }
 
     @Transactional
@@ -32,11 +39,18 @@ public class MaintenanceService {
         Instant now = Instant.now();
 
         long invitesDeleted = inviteRepository.deleteByAcceptedAtIsNullAndExpiresAtBefore(now);
-        long expiredTokens = passwordResetTokenRepository.deleteByExpiresAtBefore(now);
-        long usedTokens = passwordResetTokenRepository.deleteByUsedAtIsNotNull();
-        long tokensDeleted = expiredTokens + usedTokens;
 
-        log.info("Limpeza de manutenção: {} convites expirados e {} tokens de redefinição removidos", invitesDeleted, tokensDeleted);
+        long expiredResetTokens = passwordResetTokenRepository.deleteByExpiresAtBefore(now);
+        long usedResetTokens = passwordResetTokenRepository.deleteByUsedAtIsNotNull();
+        long resetTokensDeleted = expiredResetTokens + usedResetTokens;
+
+        long expiredVerificationTokens = emailVerificationTokenRepository.deleteByExpiresAtBefore(now);
+        long usedVerificationTokens = emailVerificationTokenRepository.deleteByUsedAtIsNotNull();
+        long verificationTokensDeleted = expiredVerificationTokens + usedVerificationTokens;
+
+        long tokensDeleted = resetTokensDeleted + verificationTokensDeleted;
+
+        log.info("Limpeza de manutenção: {} convites expirados e {} tokens removidos", invitesDeleted, tokensDeleted);
 
         return new MaintenanceResult(invitesDeleted, tokensDeleted);
     }

@@ -25,6 +25,7 @@ export interface AppUser {
   email: string
   role: 'ADMIN' | 'MANAGER' | 'EMPLOYEE'
   createdAt: string
+  emailVerified: boolean
 }
 
 export interface Invite {
