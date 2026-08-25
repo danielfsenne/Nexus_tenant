@@ -35,6 +35,9 @@ public class Product {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Version
+    private Long version;
+
     @PrePersist
     void onCreate() {
         if (createdAt == null) {

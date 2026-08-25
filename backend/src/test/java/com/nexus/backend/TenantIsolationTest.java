@@ -55,6 +55,66 @@ class TenantIsolationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void usuarioDeUmaEmpresaNaoConsegueVerProdutosDeOutraEmpresa() throws Exception {
+        String tokenEmpresaA = registrarEExtrairToken("Empresa Produtos A", "produtos-a@a.com", "senha123");
+        String tokenEmpresaB = registrarEExtrairToken("Empresa Produtos B", "produtos-b@b.com", "senha123");
+
+        Long produtoIdEmpresaA = criarProdutoERetornarId(tokenEmpresaA, "Produto da Empresa A");
+
+        mockMvc.perform(get("/products/" + produtoIdEmpresaA)
+                        .header("Authorization", "Bearer " + tokenEmpresaA))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/products/" + produtoIdEmpresaA)
+                        .header("Authorization", "Bearer " + tokenEmpresaB))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(put("/products/" + produtoIdEmpresaA)
+                        .header("Authorization", "Bearer " + tokenEmpresaB)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(Map.of("name", "Hackeado", "price", 1))))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(delete("/products/" + produtoIdEmpresaA)
+                        .header("Authorization", "Bearer " + tokenEmpresaB))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/products")
+                        .header("Authorization", "Bearer " + tokenEmpresaB))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    void usuarioDeUmaEmpresaNaoConsegueVerVendasDeOutraEmpresa() throws Exception {
+        String tokenEmpresaA = registrarEExtrairToken("Empresa Vendas A", "vendas-a@a.com", "senha123");
+        String tokenEmpresaB = registrarEExtrairToken("Empresa Vendas B", "vendas-b@b.com", "senha123");
+
+        Long clienteIdEmpresaA = criarClienteERetornarId(tokenEmpresaA, "Cliente Vendas A");
+        Long vendaIdEmpresaA = criarVendaERetornarId(tokenEmpresaA, clienteIdEmpresaA, "150.00");
+
+        mockMvc.perform(get("/orders/" + vendaIdEmpresaA)
+                        .header("Authorization", "Bearer " + tokenEmpresaA))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/orders/" + vendaIdEmpresaA)
+                        .header("Authorization", "Bearer " + tokenEmpresaB))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/orders")
+                        .header("Authorization", "Bearer " + tokenEmpresaB))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+
+        // Empresa B não pode criar venda usando o id de cliente da Empresa A.
+        mockMvc.perform(post("/orders")
+                        .header("Authorization", "Bearer " + tokenEmpresaB)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(Map.of("customerId", clienteIdEmpresaA, "total", "10.00"))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void mesmoEmailEmDuasEmpresasLogaNaEmpresaMaisAntiga() throws Exception {
         // O e-mail é único por tenant, não globalmente: a mesma pessoa pode ser
         // admin em várias empresas com senhas diferentes em cada uma. O login
@@ -100,6 +160,32 @@ class TenantIsolationTest extends AbstractIntegrationTest {
         var body = Map.of("name", name, "email", "cliente@exemplo.com");
 
         String response = mockMvc.perform(post("/customers")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        return objectMapper.readTree(response).get("id").asLong();
+    }
+
+    private Long criarProdutoERetornarId(String token, String name) throws Exception {
+        var body = Map.of("name", name, "price", "99.90");
+
+        String response = mockMvc.perform(post("/products")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        return objectMapper.readTree(response).get("id").asLong();
+    }
+
+    private Long criarVendaERetornarId(String token, Long customerId, String total) throws Exception {
+        var body = Map.of("customerId", customerId, "total", total);
+
+        String response = mockMvc.perform(post("/orders")
                         .header("Authorization", "Bearer " + token)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(body)))

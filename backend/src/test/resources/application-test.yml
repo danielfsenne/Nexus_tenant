@@ -25,6 +25,8 @@ nexus:
     enabled: false
     auth-max-attempts: 10
     auth-window-seconds: 60
+  outbox:
+    enabled: false
   order-processing:
     max-attempts: 3
     base-delay-ms: 3000

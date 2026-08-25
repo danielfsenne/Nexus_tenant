@@ -10,32 +10,38 @@ import lombok.Setter;
 import java.time.Instant;
 
 @Entity
-@Table(name = "customers")
+@Table(name = "outbox_events")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Customer {
+public class OutboxEvent {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 150)
-    private String name;
-
-    @Column(length = 150)
-    private String email;
-
     @Column(name = "tenant_id", nullable = false)
     private Long tenantId;
+
+    @Column(name = "event_type", nullable = false, length = 100)
+    private String eventType;
+
+    @Column(nullable = false, length = 100)
+    private String exchange;
+
+    @Column(name = "routing_key", nullable = false, length = 100)
+    private String routingKey;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String payload;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    @Version
-    private Long version;
+    @Column(name = "published_at")
+    private Instant publishedAt;
 
     @PrePersist
     void onCreate() {

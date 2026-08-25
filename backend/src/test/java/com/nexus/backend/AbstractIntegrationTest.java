@@ -11,7 +11,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 /**
  * Base para testes de integração: sobe um Postgres real via Testcontainers em vez
  * do H2 em modo de compatibilidade, e liga o Flyway de verdade — assim as
- * migrações (V1..V4) são exercitadas contra o banco de destino real, não uma
+ * migrações (V1..V5) são exercitadas contra o banco de destino real, não uma
  * aproximação.
  *
  * O container é iniciado manualmente (sem @Testcontainers/@Container) e nunca

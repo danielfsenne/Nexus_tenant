@@ -45,7 +45,10 @@ public class OrderController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'EMPLOYEE')")
-    public ResponseEntity<OrderResponse> create(@Valid @RequestBody OrderRequest request) {
-        return ResponseEntity.ok(orderService.create(request));
+    public ResponseEntity<OrderResponse> create(
+            @Valid @RequestBody OrderRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey
+    ) {
+        return ResponseEntity.ok(orderService.create(request, idempotencyKey));
     }
 }

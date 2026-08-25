@@ -2,20 +2,26 @@ package com.nexus.backend.order;
 
 import com.nexus.backend.audit.AuditService;
 import com.nexus.backend.common.CsvUtil;
+import com.nexus.backend.common.IdempotencyService;
 import com.nexus.backend.common.PageResponse;
 import com.nexus.backend.common.ResourceNotFoundException;
 import com.nexus.backend.domain.AuditAction;
 import com.nexus.backend.domain.Customer;
 import com.nexus.backend.domain.Order;
+import com.nexus.backend.domain.OutboxEvent;
 import com.nexus.backend.order.processing.OrderCreatedEvent;
-import com.nexus.backend.order.processing.OrderProcessingProducer;
+import com.nexus.backend.order.processing.OrderProcessingConfig;
 import com.nexus.backend.repository.CustomerRepository;
 import com.nexus.backend.repository.OrderRepository;
+import com.nexus.backend.repository.OutboxEventRepository;
 import com.nexus.backend.security.TenantContext;
 import com.nexus.backend.websocket.NotificationService;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -28,22 +34,31 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final CustomerRepository customerRepository;
+    private final OutboxEventRepository outboxEventRepository;
     private final AuditService auditService;
     private final NotificationService notificationService;
-    private final OrderProcessingProducer orderProcessingProducer;
+    private final IdempotencyService idempotencyService;
+    private final JsonMapper jsonMapper;
+    private final OrderService self;
 
     public OrderService(
             OrderRepository orderRepository,
             CustomerRepository customerRepository,
+            OutboxEventRepository outboxEventRepository,
             AuditService auditService,
             NotificationService notificationService,
-            OrderProcessingProducer orderProcessingProducer
+            IdempotencyService idempotencyService,
+            JsonMapper jsonMapper,
+            @Lazy OrderService self
     ) {
         this.orderRepository = orderRepository;
         this.customerRepository = customerRepository;
+        this.outboxEventRepository = outboxEventRepository;
         this.auditService = auditService;
         this.notificationService = notificationService;
-        this.orderProcessingProducer = orderProcessingProducer;
+        this.idempotencyService = idempotencyService;
+        this.jsonMapper = jsonMapper;
+        this.self = self;
     }
 
     public PageResponse<OrderResponse> findAll(int page, int size, Long customerId) {
@@ -78,9 +93,19 @@ public class OrderService {
         return OrderResponse.from(findOwnedByTenant(id));
     }
 
-    public OrderResponse create(OrderRequest request) {
+    public OrderResponse create(OrderRequest request, String idempotencyKey) {
         Long tenantId = TenantContext.get();
 
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            return self.doCreate(request, tenantId);
+        }
+
+        return idempotencyService.execute(tenantId, idempotencyKey, OrderResponse.class,
+                () -> self.doCreate(request, tenantId));
+    }
+
+    @Transactional
+    public OrderResponse doCreate(OrderRequest request, Long tenantId) {
         Customer customer = customerRepository.findByIdAndTenantId(request.customerId(), tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado"));
 
@@ -94,9 +119,16 @@ public class OrderService {
         auditService.record(AuditAction.CREATED, ENTITY_TYPE, saved.getId(), "total " + saved.getTotal());
         notificationService.notifyTenant(tenantId, "ORDER_CREATED", "Nova venda registrada: R$ " + saved.getTotal());
 
-        orderProcessingProducer.publish(new OrderCreatedEvent(
+        OrderCreatedEvent event = new OrderCreatedEvent(
                 saved.getId(), tenantId, customer.getId(), customer.getName(), saved.getTotal()
-        ));
+        );
+        outboxEventRepository.save(OutboxEvent.builder()
+                .tenantId(tenantId)
+                .eventType("ORDER_CREATED")
+                .exchange(OrderProcessingConfig.EXCHANGE)
+                .routingKey(OrderProcessingConfig.ROUTING_KEY_CREATED)
+                .payload(jsonMapper.writeValueAsString(event))
+                .build());
 
         return OrderResponse.from(saved);
     }
