@@ -12,3 +12,4 @@ frontend/dist/
 
 # backend build outputs (o backend/.gitignore já cobre target/, mas garantindo)
 backend/target/
+backups/

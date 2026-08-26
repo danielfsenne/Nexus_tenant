@@ -17,6 +17,11 @@ spring:
       simple:
         auto-startup: false
 
+management:
+  tracing:
+    sampling:
+      probability: 0.0
+
 nexus:
   jwt:
     secret: segredo-de-teste-apenas-para-testes-automatizados-0000

@@ -25,6 +25,9 @@ spring:
     redis:
       host: ${NEXUS_REDIS_HOST:localhost}
       port: ${NEXUS_REDIS_PORT:6379}
+      password: ${NEXUS_REDIS_PASSWORD:}
+      ssl:
+        enabled: ${NEXUS_REDIS_SSL_ENABLED:false}
 
   rabbitmq:
     host: ${NEXUS_RABBITMQ_HOST:localhost}
@@ -70,6 +73,16 @@ management:
     distribution:
       percentiles-histogram:
         http.server.requests: true
+  tracing:
+    sampling:
+      # 100% das requisições em dev/demo. Numa carga de produção real, isso
+      # deve cair bastante (ex.: 0.1) para não sobrecarregar o coletor.
+      probability: ${NEXUS_TRACING_SAMPLING_PROBABILITY:1.0}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${NEXUS_OTLP_TRACING_ENDPOINT:http://localhost:4318/v1/traces}
 
 nexus:
   cors:

@@ -1,0 +1,124 @@
+# Blueprint de deploy no Render (https://render.com/docs/blueprint-spec).
+#
+# IMPORTANTE: os nomes de serviço abaixo (nexus-backend, nexus-frontend)
+# definem a URL pública deles (https://<nome>.onrender.com). Se você mudar
+# esses nomes, ajuste também as referências manuais abaixo (VITE_API_URL,
+# NEXUS_CORS_ALLOWED_ORIGINS, NEXUS_FRONTEND_URL) — o Render não resolve
+# URL pública via fromService, só propriedades internas (host/port).
+#
+# Veja DEPLOY.md para o passo a passo completo e os pontos que precisam de
+# verificação manual no primeiro deploy.
+
+databases:
+  - name: nexus-db
+    plan: free
+    postgresMajorVersion: "16"
+
+services:
+  # RabbitMQ roda como serviço privado (sem IP público) — só o backend
+  # enxerga na rede interna do Render, pelo hostname do serviço.
+  - name: nexus-rabbitmq
+    type: pserv
+    runtime: image
+    plan: starter
+    image:
+      url: docker.io/library/rabbitmq:3-management-alpine
+    envVars:
+      - key: RABBITMQ_DEFAULT_USER
+        value: nexus
+      - key: RABBITMQ_DEFAULT_PASS
+        generateValue: true
+
+  - name: nexus-redis
+    type: keyvalue
+    plan: free
+    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru
+
+  - name: nexus-backend
+    type: web
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: NEXUS_DB_HOST
+        fromDatabase:
+          name: nexus-db
+          property: host
+      - key: NEXUS_DB_PORT
+        fromDatabase:
+          name: nexus-db
+          property: port
+      - key: NEXUS_DB_NAME
+        fromDatabase:
+          name: nexus-db
+          property: database
+      - key: NEXUS_DB_USER
+        fromDatabase:
+          name: nexus-db
+          property: user
+      - key: NEXUS_DB_PASSWORD
+        fromDatabase:
+          name: nexus-db
+          property: password
+      - key: NEXUS_REDIS_HOST
+        fromService:
+          name: nexus-redis
+          type: keyvalue
+          property: host
+      - key: NEXUS_REDIS_PORT
+        fromService:
+          name: nexus-redis
+          type: keyvalue
+          property: port
+      - key: NEXUS_REDIS_PASSWORD
+        fromService:
+          name: nexus-redis
+          type: keyvalue
+          property: password
+      - key: NEXUS_REDIS_SSL_ENABLED
+        value: "true"
+      - key: NEXUS_RABBITMQ_HOST
+        fromService:
+          name: nexus-rabbitmq
+          type: pserv
+          property: host
+      - key: NEXUS_RABBITMQ_PORT
+        value: "5672"
+      - key: NEXUS_RABBITMQ_USER
+        value: nexus
+      - key: NEXUS_RABBITMQ_PASSWORD
+        fromService:
+          name: nexus-rabbitmq
+          envVarKey: RABBITMQ_DEFAULT_PASS
+      - key: NEXUS_JWT_SECRET
+        generateValue: true
+      # Ajuste manualmente se renomear o serviço do frontend.
+      - key: NEXUS_FRONTEND_URL
+        value: https://nexus-frontend.onrender.com
+      - key: NEXUS_CORS_ALLOWED_ORIGINS
+        value: https://nexus-frontend.onrender.com
+      - key: NEXUS_RATE_LIMIT_ENABLED
+        value: "true"
+      - key: NEXUS_MAIL_ENABLED
+        value: "false"
+      # Sem coletor OTLP configurado por padrão no Render (o Tempo só sobe
+      # no docker-compose local) — deixa em 0 pra não gerar erro de export
+      # nos logs. Veja DEPLOY.md para apontar a um coletor real (ex.:
+      # Grafana Cloud) e então subir esse valor.
+      - key: NEXUS_TRACING_SAMPLING_PROBABILITY
+        value: "0"
+
+  - name: nexus-frontend
+    type: web
+    runtime: docker
+    plan: free
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    envVars:
+      # Vira ARG de build no Dockerfile (Render passa envVars como docker
+      # build args automaticamente). Ajuste se renomear nexus-backend.
+      - key: VITE_API_URL
+        value: https://nexus-backend.onrender.com

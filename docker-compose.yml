@@ -65,6 +65,7 @@ services:
       NEXUS_MAIL_PASSWORD: ${NEXUS_MAIL_PASSWORD:-}
       NEXUS_RATE_LIMIT_ENABLED: ${NEXUS_RATE_LIMIT_ENABLED:-true}
       NEXUS_CORS_ALLOWED_ORIGINS: ${NEXUS_CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:8082}
+      NEXUS_OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
     ports:
       - "8080:8080"
     depends_on:
@@ -74,6 +75,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      tempo:
+        condition: service_started
 
   frontend:
     build:
@@ -111,8 +114,27 @@ services:
       - "3001:3000"
     depends_on:
       - prometheus
+      - tempo
+
+  tempo:
+    image: grafana/tempo:2.6.1
+    container_name: nexus-tempo
+    # A imagem roda como usuário não-root por padrão e não consegue
+    # escrever no volume nomeado (fica com dono root até algo escrever
+    # nele primeiro). Rodar como root aqui é aceitável: é só um
+    # observabilidade local, sem exposição fora da rede do compose.
+    user: root
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./observability/tempo/tempo.yaml:/etc/tempo.yaml:ro
+      - nexus_tempo_data:/tmp/tempo
+    ports:
+      - "3200:3200"
+      - "4317:4317"
+      - "4318:4318"
 
 volumes:
   nexus_postgres_data:
   nexus_prometheus_data:
   nexus_grafana_data:
+  nexus_tempo_data:
