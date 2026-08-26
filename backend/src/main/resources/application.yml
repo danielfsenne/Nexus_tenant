@@ -78,7 +78,10 @@ nexus:
     allowed-origins: ${NEXUS_CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:8082}
   jwt:
     secret: ${NEXUS_JWT_SECRET:troque-este-segredo-em-producao-1234567890}
-    expiration-minutes: 60
+    # Access token de vida curta; sessões longas são sustentadas pelo refresh
+    # token (opaco, persistido no banco, com rotação a cada uso).
+    expiration-minutes: 15
+    refresh-expiration-days: 30
   frontend-url: ${NEXUS_FRONTEND_URL:http://localhost:5173}
   invite-expiration-days: 7
   password-reset-expiration-hours: 2

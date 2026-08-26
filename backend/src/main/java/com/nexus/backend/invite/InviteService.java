@@ -2,6 +2,7 @@ package com.nexus.backend.invite;
 
 import com.nexus.backend.audit.AuditService;
 import com.nexus.backend.auth.AuthResponse;
+import com.nexus.backend.auth.AuthService;
 import com.nexus.backend.common.ConflictException;
 import com.nexus.backend.common.PlanLimitService;
 import com.nexus.backend.common.ResourceNotFoundException;
@@ -13,7 +14,6 @@ import com.nexus.backend.mail.MailService;
 import com.nexus.backend.repository.InviteRepository;
 import com.nexus.backend.repository.TenantRepository;
 import com.nexus.backend.repository.UserRepository;
-import com.nexus.backend.security.JwtService;
 import com.nexus.backend.security.TenantContext;
 import com.nexus.backend.websocket.NotificationService;
 import org.slf4j.Logger;
@@ -38,7 +38,7 @@ public class InviteService {
     private final TenantRepository tenantRepository;
     private final PlanLimitService planLimitService;
     private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
+    private final AuthService authService;
     private final AuditService auditService;
     private final NotificationService notificationService;
     private final MailService mailService;
@@ -51,7 +51,7 @@ public class InviteService {
             TenantRepository tenantRepository,
             PlanLimitService planLimitService,
             PasswordEncoder passwordEncoder,
-            JwtService jwtService,
+            AuthService authService,
             AuditService auditService,
             NotificationService notificationService,
             MailService mailService,
@@ -63,7 +63,7 @@ public class InviteService {
         this.tenantRepository = tenantRepository;
         this.planLimitService = planLimitService;
         this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
+        this.authService = authService;
         this.auditService = auditService;
         this.notificationService = notificationService;
         this.mailService = mailService;
@@ -159,7 +159,6 @@ public class InviteService {
                 user.getName() + " aceitou o convite e entrou como " + user.getRole()
         );
 
-        String token = jwtService.generateToken(user);
-        return new AuthResponse(token, user.getTenantId(), user.getRole().name());
+        return authService.buildAuthResponse(user);
     }
 }

@@ -1,5 +1,6 @@
 package com.nexus.backend.user;
 
+import com.nexus.backend.auth.AuthResponse;
 import com.nexus.backend.auth.AuthService;
 import com.nexus.backend.common.ConflictException;
 import com.nexus.backend.common.ResourceNotFoundException;
@@ -42,13 +43,24 @@ public class UserService {
         return UserResponse.from(userRepository.save(user));
     }
 
-    public void changePassword(ChangePasswordRequest request) {
+    public AuthResponse changePassword(ChangePasswordRequest request) {
         User user = currentUser();
         if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
             throw new BadCredentialsException("Senha atual incorreta");
         }
         user.setPassword(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
+
+        // Uma senha comprometida invalida qualquer sessão aberta com a senha
+        // antiga: revoga todos os refresh tokens ativos do usuário, e emite
+        // um par novo para a sessão atual continuar funcionando sem precisar
+        // logar de novo.
+        authService.logoutAllSessions(user.getId());
+        return authService.buildAuthResponse(user);
+    }
+
+    public void logoutAllSessions() {
+        authService.logoutAllSessions(currentUser().getId());
     }
 
     public void resendVerification() {

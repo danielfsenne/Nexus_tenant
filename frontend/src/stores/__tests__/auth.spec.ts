@@ -24,9 +24,9 @@ describe('auth store', () => {
     expect(auth.token).toBeNull()
   })
 
-  it('login salva o token e persiste no localStorage', async () => {
+  it('login salva o token, o refresh token e persiste no localStorage', async () => {
     mockedPost.mockResolvedValue({
-      data: { token: 'jwt-fake', tenantId: 7, role: 'ADMIN' },
+      data: { token: 'jwt-fake', refreshToken: 'refresh-fake', tenantId: 7, role: 'ADMIN' },
     } as never)
 
     const auth = useAuthStore()
@@ -34,6 +34,7 @@ describe('auth store', () => {
 
     expect(auth.isAuthenticated).toBe(true)
     expect(auth.token).toBe('jwt-fake')
+    expect(auth.refreshToken).toBe('refresh-fake')
     expect(auth.tenantId).toBe(7)
     expect(auth.role).toBe('ADMIN')
     expect(JSON.parse(localStorage.getItem('nexus.auth')!)).toMatchObject({ token: 'jwt-fake' })
@@ -41,7 +42,7 @@ describe('auth store', () => {
 
   it('register salva o token igual ao login', async () => {
     mockedPost.mockResolvedValue({
-      data: { token: 'jwt-registro', tenantId: 9, role: 'ADMIN' },
+      data: { token: 'jwt-registro', refreshToken: 'refresh-registro', tenantId: 9, role: 'ADMIN' },
     } as never)
 
     const auth = useAuthStore()
@@ -56,22 +57,53 @@ describe('auth store', () => {
     })
   })
 
-  it('logout limpa o estado e o localStorage', async () => {
-    mockedPost.mockResolvedValue({
-      data: { token: 'jwt-fake', tenantId: 7, role: 'ADMIN' },
+  it('refreshAccessToken troca o par de tokens usando o refresh token atual', async () => {
+    mockedPost.mockResolvedValueOnce({
+      data: { token: 'jwt-velho', refreshToken: 'refresh-velho', tenantId: 7, role: 'ADMIN' },
     } as never)
 
     const auth = useAuthStore()
     await auth.login({ email: 'admin@teste.com', password: 'senha123' })
+
+    mockedPost.mockResolvedValueOnce({
+      data: { token: 'jwt-novo', refreshToken: 'refresh-novo', tenantId: 7, role: 'ADMIN' },
+    } as never)
+
+    await auth.refreshAccessToken()
+
+    expect(mockedPost).toHaveBeenLastCalledWith('/auth/refresh', { refreshToken: 'refresh-velho' })
+    expect(auth.token).toBe('jwt-novo')
+    expect(auth.refreshToken).toBe('refresh-novo')
+  })
+
+  it('refreshAccessToken lança quando não há refresh token salvo', async () => {
+    const auth = useAuthStore()
+
+    await expect(auth.refreshAccessToken()).rejects.toThrow()
+    expect(mockedPost).not.toHaveBeenCalled()
+  })
+
+  it('logout limpa o estado, o localStorage e tenta revogar a sessão no backend', async () => {
+    mockedPost.mockResolvedValue({
+      data: { token: 'jwt-fake', refreshToken: 'refresh-fake', tenantId: 7, role: 'ADMIN' },
+    } as never)
+
+    const auth = useAuthStore()
+    await auth.login({ email: 'admin@teste.com', password: 'senha123' })
+    mockedPost.mockClear()
     auth.logout()
 
     expect(auth.isAuthenticated).toBe(false)
     expect(auth.token).toBeNull()
     expect(localStorage.getItem('nexus.auth')).toBeNull()
+    expect(mockedPost).toHaveBeenCalledWith('/auth/logout', { refreshToken: 'refresh-fake' })
   })
 
   it('restaura a sessão salva no localStorage ao criar a store', () => {
-    localStorage.setItem('nexus.auth', JSON.stringify({ token: 'jwt-salvo', tenantId: 3, role: 'EMPLOYEE' }))
+    localStorage.setItem(
+      'nexus.auth',
+      JSON.stringify({ token: 'jwt-salvo', refreshToken: 'refresh-salvo', tenantId: 3, role: 'EMPLOYEE' }),
+    )
 
     const auth = useAuthStore()
 

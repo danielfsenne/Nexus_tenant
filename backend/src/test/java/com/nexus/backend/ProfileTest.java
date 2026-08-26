@@ -31,13 +31,16 @@ class ProfileTest extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(senhaErrada)))
                 .andExpect(status().isUnauthorized());
 
-        // Senha atual correta troca a senha.
+        // Senha atual correta troca a senha e devolve um par de tokens novo
+        // (a sessão atual continua válida mesmo revogando as demais).
         var senhaCorreta = Map.of("currentPassword", "senhaOriginal1", "newPassword", "senhaNova123");
         mockMvc.perform(put("/users/me/password")
                         .header("Authorization", "Bearer " + token)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(senhaCorreta)))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").exists())
+                .andExpect(jsonPath("$.refreshToken").exists());
 
         // A senha antiga não autentica mais.
         var loginAntigo = Map.of("email", email, "password", "senhaOriginal1");
@@ -51,6 +54,45 @@ class ProfileTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/auth/login")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(loginNovo)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void trocaDeSenhaRevogaOutrasSessoesMasEmiteUmaNovaParaASessaoAtual() throws Exception {
+        String email = "admin@perfil-sessoes.com";
+        String password = "senhaOriginal1";
+        var body = Map.of("companyName", "Empresa Perfil Sessões", "adminName", "Admin", "email", email, "password", password);
+
+        String registroResponse = mockMvc.perform(post("/auth/register")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        var registro = objectMapper.readTree(registroResponse);
+        String token = registro.get("token").asText();
+        String refreshTokenAntigo = registro.get("refreshToken").asText();
+
+        var senhaCorreta = Map.of("currentPassword", password, "newPassword", "senhaNova123");
+        String trocaResponse = mockMvc.perform(put("/users/me/password")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(senhaCorreta)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        String refreshTokenNovo = objectMapper.readTree(trocaResponse).get("refreshToken").asText();
+
+        // O refresh token de antes da troca de senha não funciona mais.
+        mockMvc.perform(post("/auth/refresh")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(Map.of("refreshToken", refreshTokenAntigo))))
+                .andExpect(status().isUnauthorized());
+
+        // O novo refresh token, devolvido pela própria troca de senha, funciona normalmente.
+        mockMvc.perform(post("/auth/refresh")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(Map.of("refreshToken", refreshTokenNovo))))
                 .andExpect(status().isOk());
     }
 

@@ -5,12 +5,14 @@ import com.nexus.backend.common.ResourceNotFoundException;
 import com.nexus.backend.domain.EmailVerificationToken;
 import com.nexus.backend.domain.PasswordResetToken;
 import com.nexus.backend.domain.Plan;
+import com.nexus.backend.domain.RefreshToken;
 import com.nexus.backend.domain.Role;
 import com.nexus.backend.domain.Tenant;
 import com.nexus.backend.domain.User;
 import com.nexus.backend.mail.MailService;
 import com.nexus.backend.repository.EmailVerificationTokenRepository;
 import com.nexus.backend.repository.PasswordResetTokenRepository;
+import com.nexus.backend.repository.RefreshTokenRepository;
 import com.nexus.backend.repository.TenantRepository;
 import com.nexus.backend.repository.UserRepository;
 import com.nexus.backend.security.JwtService;
@@ -35,35 +37,41 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final MailService mailService;
     private final String frontendUrl;
     private final long passwordResetExpirationHours;
     private final long emailVerificationExpirationHours;
+    private final long refreshExpirationDays;
 
     public AuthService(
             TenantRepository tenantRepository,
             UserRepository userRepository,
             PasswordResetTokenRepository passwordResetTokenRepository,
             EmailVerificationTokenRepository emailVerificationTokenRepository,
+            RefreshTokenRepository refreshTokenRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             MailService mailService,
             @Value("${nexus.frontend-url}") String frontendUrl,
             @Value("${nexus.password-reset-expiration-hours}") long passwordResetExpirationHours,
-            @Value("${nexus.email-verification-expiration-hours}") long emailVerificationExpirationHours
+            @Value("${nexus.email-verification-expiration-hours}") long emailVerificationExpirationHours,
+            @Value("${nexus.jwt.refresh-expiration-days}") long refreshExpirationDays
     ) {
         this.tenantRepository = tenantRepository;
         this.userRepository = userRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.emailVerificationTokenRepository = emailVerificationTokenRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.mailService = mailService;
         this.frontendUrl = frontendUrl;
         this.passwordResetExpirationHours = passwordResetExpirationHours;
         this.emailVerificationExpirationHours = emailVerificationExpirationHours;
+        this.refreshExpirationDays = refreshExpirationDays;
     }
 
     @Transactional
@@ -87,8 +95,61 @@ public class AuthService {
 
         sendVerificationEmail(admin);
 
-        String token = jwtService.generateToken(admin);
-        return new AuthResponse(token, tenant.getId(), admin.getRole().name());
+        return buildAuthResponse(admin);
+    }
+
+    /**
+     * Emite o par de tokens (access token JWT de vida curta + refresh token
+     * opaco de vida longa, persistido no banco) para o usuário. Usado após
+     * login, registro e aceite de convite — todo evento que estabelece uma
+     * nova sessão.
+     */
+    public AuthResponse buildAuthResponse(User user) {
+        String accessToken = jwtService.generateToken(user);
+
+        RefreshToken refreshToken = refreshTokenRepository.save(
+                RefreshToken.builder()
+                        .userId(user.getId())
+                        .token(UUID.randomUUID().toString())
+                        .expiresAt(Instant.now().plusSeconds(refreshExpirationDays * 24 * 60 * 60))
+                        .build()
+        );
+
+        return new AuthResponse(accessToken, refreshToken.getToken(), user.getTenantId(), user.getRole().name());
+    }
+
+    @Transactional
+    public AuthResponse refresh(RefreshRequest request) {
+        RefreshToken refreshToken = refreshTokenRepository.findByToken(request.refreshToken())
+                .orElseThrow(() -> new BadCredentialsException("Refresh token inválido"));
+
+        if (refreshToken.isRevoked() || refreshToken.isExpired()) {
+            throw new BadCredentialsException("Refresh token inválido");
+        }
+
+        User user = userRepository.findById(refreshToken.getUserId())
+                .orElseThrow(() -> new BadCredentialsException("Refresh token inválido"));
+
+        // Rotação: o token usado é revogado e um novo é emitido, então um
+        // refresh token só pode ser trocado uma vez. Se o mesmo token for
+        // apresentado de novo depois disso, é sinal de reuso indevido.
+        refreshToken.setRevokedAt(Instant.now());
+        refreshTokenRepository.save(refreshToken);
+
+        return buildAuthResponse(user);
+    }
+
+    public void logout(LogoutRequest request) {
+        refreshTokenRepository.findByToken(request.refreshToken())
+                .ifPresent(refreshToken -> {
+                    refreshToken.setRevokedAt(Instant.now());
+                    refreshTokenRepository.save(refreshToken);
+                });
+    }
+
+    @Transactional
+    public void logoutAllSessions(Long userId) {
+        refreshTokenRepository.revokeAllActiveForUser(userId, Instant.now());
     }
 
     public void sendVerificationEmail(User user) {
@@ -142,8 +203,7 @@ public class AuthService {
             throw new BadCredentialsException("Credenciais inválidas");
         }
 
-        String token = jwtService.generateToken(user);
-        return new AuthResponse(token, user.getTenantId(), user.getRole().name());
+        return buildAuthResponse(user);
     }
 
     public void forgotPassword(ForgotPasswordRequest request) {

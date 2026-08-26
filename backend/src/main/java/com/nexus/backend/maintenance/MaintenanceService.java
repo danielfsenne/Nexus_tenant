@@ -3,6 +3,7 @@ package com.nexus.backend.maintenance;
 import com.nexus.backend.repository.EmailVerificationTokenRepository;
 import com.nexus.backend.repository.InviteRepository;
 import com.nexus.backend.repository.PasswordResetTokenRepository;
+import com.nexus.backend.repository.RefreshTokenRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -23,15 +24,18 @@ public class MaintenanceService {
     private final InviteRepository inviteRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     public MaintenanceService(
             InviteRepository inviteRepository,
             PasswordResetTokenRepository passwordResetTokenRepository,
-            EmailVerificationTokenRepository emailVerificationTokenRepository
+            EmailVerificationTokenRepository emailVerificationTokenRepository,
+            RefreshTokenRepository refreshTokenRepository
     ) {
         this.inviteRepository = inviteRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.emailVerificationTokenRepository = emailVerificationTokenRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
     }
 
     @Transactional
@@ -48,7 +52,11 @@ public class MaintenanceService {
         long usedVerificationTokens = emailVerificationTokenRepository.deleteByUsedAtIsNotNull();
         long verificationTokensDeleted = expiredVerificationTokens + usedVerificationTokens;
 
-        long tokensDeleted = resetTokensDeleted + verificationTokensDeleted;
+        long expiredRefreshTokens = refreshTokenRepository.deleteByExpiresAtBefore(now);
+        long revokedRefreshTokens = refreshTokenRepository.deleteByRevokedAtIsNotNull();
+        long refreshTokensDeleted = expiredRefreshTokens + revokedRefreshTokens;
+
+        long tokensDeleted = resetTokensDeleted + verificationTokensDeleted + refreshTokensDeleted;
 
         log.info("Limpeza de manutenção: {} convites expirados e {} tokens removidos", invitesDeleted, tokensDeleted);
 

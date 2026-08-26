@@ -1,5 +1,6 @@
 package com.nexus.backend.user;
 
+import com.nexus.backend.auth.AuthResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -34,14 +35,19 @@ public class UserController {
     }
 
     @PutMapping("/me/password")
-    public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
-        userService.changePassword(request);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<AuthResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        return ResponseEntity.ok(userService.changePassword(request));
     }
 
     @PostMapping("/me/resend-verification")
     public ResponseEntity<Void> resendVerification() {
         userService.resendVerification();
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/me/logout-all")
+    public ResponseEntity<Void> logoutAllSessions() {
+        userService.logoutAllSessions();
         return ResponseEntity.ok().build();
     }
 }
