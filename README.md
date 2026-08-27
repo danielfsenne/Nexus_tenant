@@ -15,7 +15,7 @@ SaaS de gestão empresarial multi-tenant (multi-empresa): autenticação, contro
 - **Autenticação e multi-tenancy** — registro de empresa com verificação de e-mail, login com JWT de vida curta + refresh token rotativo (com "sair de todos os dispositivos"), RBAC por papel (`ADMIN` / `MANAGER` / `EMPLOYEE`), isolamento de dados por tenant validado em toda requisição e reforçado com Row-Level Security no Postgres.
 - **Gestão** — CRUD de clientes, produtos e vendas, com paginação, busca/filtro e exportação CSV.
 - **SaaS** — planos com limites de uso (checados com lock pessimista contra corridas), convite de membros da equipe por e-mail, redefinição de senha por e-mail.
-- **Confiabilidade de dados** — idempotência na criação de vendas (`Idempotency-Key`), padrão Outbox para publicação de eventos, optimistic locking (`@Version`) em clientes/produtos.
+- **Confiabilidade de dados** — idempotência na criação de vendas (`Idempotency-Key`), padrão Outbox para publicação de eventos, optimistic locking (`@Version`) e soft-delete em clientes/produtos.
 - **Observabilidade de produto** — log de auditoria por tenant, cache e rate-limiting via Redis, notificações em tempo real via WebSocket.
 - **Processamento assíncrono** — vendas processadas via RabbitMQ com retry exponencial e dead-letter queue, jobs agendados de manutenção.
 - **Perfil** — edição de dados próprios, troca de senha e encerramento de sessões.

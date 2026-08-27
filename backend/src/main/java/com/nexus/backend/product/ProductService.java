@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 
 @Service
 public class ProductService {
@@ -86,7 +87,8 @@ public class ProductService {
 
     public void delete(Long id) {
         Product product = findOwnedByTenant(id);
-        productRepository.delete(product);
+        product.setDeletedAt(Instant.now());
+        productRepository.save(product);
         auditService.record(AuditAction.DELETED, ENTITY_TYPE, product.getId(), product.getName());
     }
 
