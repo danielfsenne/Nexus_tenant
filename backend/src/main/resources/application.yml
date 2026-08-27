@@ -3,9 +3,12 @@ spring:
     name: nexus-backend
 
   datasource:
+    # Pool principal da aplicação (JPA/Hikari): usa a role restrita
+    # nexus_app (sem SUPERUSER/BYPASSRLS, criada na migration V8), sujeita
+    # às policies de Row-Level Security.
     url: jdbc:postgresql://${NEXUS_DB_HOST:localhost}:${NEXUS_DB_PORT:5433}/${NEXUS_DB_NAME:nexus}
-    username: ${NEXUS_DB_USER:nexus}
-    password: ${NEXUS_DB_PASSWORD:nexus}
+    username: ${NEXUS_DB_APP_USER:nexus_app}
+    password: ${NEXUS_DB_APP_PASSWORD:nexus_app}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -20,6 +23,14 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    # As migrations rodam com a role administrativa (que tem privilégio de
+    # DDL/CREATE ROLE), separada da role restrita usada pelo pool principal
+    # acima — ver spring.datasource.
+    url: jdbc:postgresql://${NEXUS_DB_HOST:localhost}:${NEXUS_DB_PORT:5433}/${NEXUS_DB_NAME:nexus}
+    user: ${NEXUS_DB_USER:nexus}
+    password: ${NEXUS_DB_PASSWORD:nexus}
+    placeholders:
+      appDbPassword: ${NEXUS_DB_APP_PASSWORD:nexus_app}
 
   data:
     redis:

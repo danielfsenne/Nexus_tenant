@@ -6,6 +6,7 @@ import com.nexus.backend.domain.AuditLog;
 import com.nexus.backend.repository.AuditLogRepository;
 import com.nexus.backend.security.CurrentUserContext;
 import com.nexus.backend.security.TenantContext;
+import com.nexus.backend.security.TenantSessionSync;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -13,9 +14,11 @@ import org.springframework.stereotype.Service;
 public class AuditService {
 
     private final AuditLogRepository auditLogRepository;
+    private final TenantSessionSync tenantSessionSync;
 
-    public AuditService(AuditLogRepository auditLogRepository) {
+    public AuditService(AuditLogRepository auditLogRepository, TenantSessionSync tenantSessionSync) {
         this.auditLogRepository = auditLogRepository;
+        this.tenantSessionSync = tenantSessionSync;
     }
 
     public PageResponse<AuditLogResponse> findAll(int page, int size, AuditAction action) {
@@ -56,6 +59,11 @@ public class AuditService {
             Long entityId,
             String details
     ) {
+        // Fluxo público (sem TenantContext): a conexão já foi obtida sem
+        // tenant, então precisa sincronizar a sessão do Postgres explicitamente
+        // antes de gravar numa tabela protegida por Row-Level Security.
+        tenantSessionSync.apply(tenantId);
+
         auditLogRepository.save(
                 AuditLog.builder()
                         .tenantId(tenantId)

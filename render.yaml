@@ -63,6 +63,11 @@ services:
         fromDatabase:
           name: nexus-db
           property: password
+      # Senha da role restrita nexus_app, criada pela migration V8 (Row-Level
+      # Security). ATENÇÃO: bancos gerenciados costumam não dar CREATEROLE
+      # pro usuário padrão — se a migration falhar por isso, veja DEPLOY.md.
+      - key: NEXUS_DB_APP_PASSWORD
+        generateValue: true
       - key: NEXUS_REDIS_HOST
         fromService:
           name: nexus-redis

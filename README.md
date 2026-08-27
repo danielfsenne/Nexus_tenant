@@ -12,7 +12,7 @@ SaaS de gestão empresarial multi-tenant (multi-empresa): autenticação, contro
 
 ## Funcionalidades
 
-- **Autenticação e multi-tenancy** — registro de empresa com verificação de e-mail, login com JWT de vida curta + refresh token rotativo (com "sair de todos os dispositivos"), RBAC por papel (`ADMIN` / `MANAGER` / `EMPLOYEE`), isolamento de dados por tenant validado em toda requisição.
+- **Autenticação e multi-tenancy** — registro de empresa com verificação de e-mail, login com JWT de vida curta + refresh token rotativo (com "sair de todos os dispositivos"), RBAC por papel (`ADMIN` / `MANAGER` / `EMPLOYEE`), isolamento de dados por tenant validado em toda requisição e reforçado com Row-Level Security no Postgres.
 - **Gestão** — CRUD de clientes, produtos e vendas, com paginação, busca/filtro e exportação CSV.
 - **SaaS** — planos com limites de uso (checados com lock pessimista contra corridas), convite de membros da equipe por e-mail, redefinição de senha por e-mail.
 - **Confiabilidade de dados** — idempotência na criação de vendas (`Idempotency-Key`), padrão Outbox para publicação de eventos, optimistic locking (`@Version`) em clientes/produtos.
@@ -24,6 +24,8 @@ SaaS de gestão empresarial multi-tenant (multi-empresa): autenticação, contro
 ## Arquitetura
 
 Multi-tenancy via banco compartilhado + coluna `tenant_id` em todas as tabelas de negócio. O `tenant_id` e o papel do usuário vêm das claims do JWT (nunca de um valor enviado pelo cliente) e ficam disponíveis via `TenantContext`/`CurrentUserContext` (ThreadLocal) durante toda a requisição; todo acesso a dado é escopado por esse tenant.
+
+Isolamento em duas camadas: o filtro por `tenant_id` no código é a primeira, e Row-Level Security no Postgres é a segunda — as tabelas `customers`, `products`, `orders` e `audit_logs` têm policies que restringem as linhas visíveis à variável de sessão `app.tenant_id`, aplicada automaticamente a cada conexão pelo pool (`TenantAwareDataSource`). Isso significa que uma query nova que esqueça o filtro por tenant não vaza dados entre empresas — o banco barra mesmo assim. O pool da aplicação roda com uma role restrita (`nexus_app`, sem `SUPERUSER`/`BYPASSRLS`), separada da role usada só pelo Flyway para migrations.
 
 Vendas são publicadas no RabbitMQ (`exchange nexus.orders`) e processadas de forma assíncrona por um consumer, com retry com backoff exponencial (TTL por mensagem + dead-letter-exchange) e uma fila de DLQ final após esgotar as tentativas. Notificações de eventos (nova venda, convite aceito, etc.) chegam ao frontend em tempo real via WebSocket/STOMP, num tópico escopado por tenant.
 

@@ -24,6 +24,14 @@ public final class TenantContext {
         return tenantId;
     }
 
+    /**
+     * Igual a {@link #get()}, mas retorna null em vez de lançar exceção
+     * quando não há tenant no contexto (ex.: rotas públicas, jobs agendados).
+     */
+    public static Long getOrNull() {
+        return CURRENT_TENANT.get();
+    }
+
     public static void clear() {
         CURRENT_TENANT.remove();
     }

@@ -64,6 +64,34 @@ por exemplo, o tier gratuito do
 [Grafana Cloud](https://grafana.com/products/cloud/) tem um endpoint OTLP
 — e suba `NEXUS_TRACING_SAMPLING_PROBABILITY` para algo como `0.1`.
 
+## Row-Level Security em produção
+
+A migration V8 cria uma role de banco restrita (`nexus_app`, sem
+`SUPERUSER`/`BYPASSRLS`) usada pelo pool de conexões da aplicação, e ativa
+Row-Level Security nas tabelas `customers`, `products`, `orders` e
+`audit_logs`. Isso exige que a role principal (a que roda as migrations,
+`NEXUS_DB_USER`) tenha privilégio de `CREATE ROLE` — o que costuma faltar
+em bancos gerenciados por provedores de nuvem, incluindo potencialmente o
+Postgres free do Render.
+
+A migration só tenta criar a role se ela ainda não existir, então dá pra
+evitar o erro de vez criando-a manualmente **antes** do primeiro deploy
+(ou antes de reativar o deploy, se já tiver falhado uma vez):
+
+1. Pegue o valor de `NEXUS_DB_APP_PASSWORD` em **nexus-backend > Environment**
+   no dashboard do Render (foi gerado automaticamente pelo Blueprint).
+2. Conecte no `nexus-db` com um cliente que tenha privilégio administrativo
+   (via **Connect** no dashboard do Render, ou `render psql`).
+3. Rode: `CREATE ROLE nexus_app LOGIN PASSWORD '<valor do passo 1>' NOSUPERUSER NOBYPASSRLS;`
+4. Faça o deploy (ou "Manual Deploy > Clear build cache & deploy" se já
+   tinha falhado antes) — a migration vai ver que a role já existe, pular
+   a criação e seguir com os `GRANT`/`CREATE POLICY` normalmente.
+
+Se o deploy já tiver falhado e o Flyway tiver marcado a migration V8 como
+`failed` no histórico (`flyway_schema_history`), rodar `./mvnw flyway:repair`
+localmente contra o banco do Render (com `-Dflyway.url/user/password`
+apontando pra lá) antes de tentar de novo.
+
 ## Backup do banco em produção
 
 `scripts/backup.sh` e `scripts/restore.sh` aceitam `DATABASE_URL` pra

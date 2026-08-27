@@ -52,6 +52,8 @@ services:
       NEXUS_DB_NAME: nexus
       NEXUS_DB_USER: nexus
       NEXUS_DB_PASSWORD: nexus
+      NEXUS_DB_APP_USER: nexus_app
+      NEXUS_DB_APP_PASSWORD: ${NEXUS_DB_APP_PASSWORD:-nexus_app}
       NEXUS_REDIS_HOST: redis
       NEXUS_REDIS_PORT: 6379
       NEXUS_RABBITMQ_HOST: rabbitmq
